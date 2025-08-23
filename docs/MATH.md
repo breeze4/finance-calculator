@@ -48,7 +48,7 @@ If already Coast FIRE ready: coastFIREAge = currentAge
 
 If not ready:
 yearsNeeded = ln(targetRetirementAmount ÷ currentSavings) ÷ ln(1 + r)
-coastFIREAge = ceil(retirementAge - yearsNeeded)
+coastFIREAge = ceil(currentAge + yearsNeeded)
 
 Where:
 - ln = natural logarithm

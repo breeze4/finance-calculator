@@ -104,7 +104,7 @@ export const useCoastFireStore = defineStore('coastFire', () => {
     
     const rate = expectedReturnRate.value / 100
     const yearsNeeded = Math.log(targetRetirementAmount.value / currentSavings.value) / Math.log(1 + rate)
-    return Math.ceil(retirementAge.value - yearsNeeded)
+    return Math.ceil(currentAge.value + yearsNeeded)
   })
   
   return {
