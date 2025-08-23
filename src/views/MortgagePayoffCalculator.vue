@@ -3,7 +3,15 @@ import { useMortgagePayoffStore } from '../stores/mortgagePayoff'
 import { ref } from 'vue'
 
 const store = useMortgagePayoffStore()
-const showInvestmentComparison = ref(false)
+const showResetFeedback = ref(false)
+
+const handleReset = () => {
+  store.resetToDefaults()
+  showResetFeedback.value = true
+  setTimeout(() => {
+    showResetFeedback.value = false
+  }, 2000)
+}
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('en-US', {
@@ -109,13 +117,13 @@ const formatMonths = (months: number) => {
         
         <div class="collapsible-section">
           <button 
-            @click="showInvestmentComparison = !showInvestmentComparison"
+            @click="store.showInvestmentComparison = !store.showInvestmentComparison"
             class="secondary toggle-button"
           >
-            {{ showInvestmentComparison ? 'Hide' : 'Show' }} Investment Comparison
+            {{ store.showInvestmentComparison ? 'Hide' : 'Show' }} Investment Comparison
           </button>
           
-          <div v-if="showInvestmentComparison" class="investment-inputs">
+          <div v-if="store.showInvestmentComparison" class="investment-inputs">
             <h3>Investment Scenario</h3>
             
             <div class="form-row">
@@ -146,9 +154,13 @@ const formatMonths = (months: number) => {
           </div>
         </div>
         
-        <button @click="store.resetToDefaults" class="secondary reset-button">
+        <button @click="handleReset" class="secondary reset-button">
           Reset to Defaults
         </button>
+        
+        <div v-if="showResetFeedback" class="reset-feedback">
+          ✓ Values reset to defaults
+        </div>
       </div>
       
       <div class="results-section">
@@ -192,7 +204,7 @@ const formatMonths = (months: number) => {
           </div>
         </div>
         
-        <div v-if="showInvestmentComparison" class="investment-results">
+        <div v-if="store.showInvestmentComparison" class="investment-results">
           <h4>Investment Comparison</h4>
           
           <div class="investment-card">
@@ -325,6 +337,23 @@ h3 {
 .reset-button {
   width: 100%;
   margin-top: 1.5rem;
+}
+
+.reset-feedback {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  text-align: center;
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .comparison-grid {

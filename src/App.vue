@@ -6,9 +6,11 @@ import NavBar from './components/NavBar.vue'
 <template>
   <div id="app">
     <NavBar />
-    <Transition name="page" mode="out-in">
-      <RouterView />
-    </Transition>
+    <RouterView v-slot="{ Component }">
+      <Transition name="page" mode="out-in">
+        <component :is="Component" />
+      </Transition>
+    </RouterView>
   </div>
 </template>
 

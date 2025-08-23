@@ -1,8 +1,17 @@
 <script setup lang="ts">
 import { useCoastFireStore } from '../stores/coastFire'
-import { watch } from 'vue'
+import { watch, ref } from 'vue'
 
 const store = useCoastFireStore()
+const showResetFeedback = ref(false)
+
+const handleReset = () => {
+  store.resetToDefaults()
+  showResetFeedback.value = true
+  setTimeout(() => {
+    showResetFeedback.value = false
+  }, 2000)
+}
 
 watch([() => store.currentAge, () => store.retirementAge, () => store.currentSavings, 
        () => store.expectedReturnRate, () => store.targetRetirementAmount], () => {
@@ -112,9 +121,13 @@ const formatPercent = (value: number) => {
           <span v-if="store.errors.targetRetirementAmount" class="error-message">{{ store.errors.targetRetirementAmount }}</span>
         </div>
         
-        <button @click="store.resetToDefaults" class="secondary">
+        <button @click="handleReset" class="secondary">
           Reset to Defaults
         </button>
+        
+        <div v-if="showResetFeedback" class="reset-feedback">
+          ✓ Values reset to defaults
+        </div>
       </div>
       
       <div class="results-panel">
@@ -312,6 +325,23 @@ h2 {
 button {
   margin-top: 1rem;
   width: 100%;
+}
+
+.reset-feedback {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  text-align: center;
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @media (max-width: 768px) {

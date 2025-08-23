@@ -66,6 +66,14 @@ export const useCoastFireStore = defineStore('coastFire', () => {
     currentSavings.value = 50000
     expectedReturnRate.value = 7
     targetRetirementAmount.value = 1000000
+    // Clear validation errors
+    errors.value = {
+      currentAge: '',
+      retirementAge: '',
+      currentSavings: '',
+      expectedReturnRate: '',
+      targetRetirementAmount: ''
+    }
   }
   
   const yearsToRetirement = computed(() => {
@@ -115,5 +123,8 @@ export const useCoastFireStore = defineStore('coastFire', () => {
     resetToDefaults
   }
 }, {
-  persist: true
+  persist: {
+    key: 'coastFire',
+    storage: localStorage
+  }
 })

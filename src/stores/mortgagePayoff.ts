@@ -11,6 +11,7 @@ export const useMortgagePayoffStore = defineStore('mortgagePayoff', () => {
   
   const investmentReturnRate = ref(7)
   const investmentTaxRate = ref(20)
+  const showInvestmentComparison = ref(false)
   
   const resetToDefaults = () => {
     principal.value = 300000
@@ -21,6 +22,7 @@ export const useMortgagePayoffStore = defineStore('mortgagePayoff', () => {
     lumpSumPayment.value = 0
     investmentReturnRate.value = 7
     investmentTaxRate.value = 20
+    showInvestmentComparison.value = false
   }
   
   const monthlyInterestRate = computed(() => interestRate.value / 100 / 12)
@@ -116,6 +118,7 @@ export const useMortgagePayoffStore = defineStore('mortgagePayoff', () => {
     lumpSumPayment,
     investmentReturnRate,
     investmentTaxRate,
+    showInvestmentComparison,
     basePayoffMonths,
     baseTotalInterest,
     acceleratedPayoffMonths,
@@ -130,5 +133,8 @@ export const useMortgagePayoffStore = defineStore('mortgagePayoff', () => {
     resetToDefaults
   }
 }, {
-  persist: true
+  persist: {
+    key: 'mortgagePayoff',
+    storage: localStorage
+  }
 })
