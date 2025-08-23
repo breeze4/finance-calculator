@@ -55,6 +55,35 @@ pnpm build
 pnpm preview
 ```
 
+### Testing
+
+The project includes comprehensive unit tests for all mathematical calculations:
+
+```bash
+# Run all tests
+pnpm test
+
+# Run tests with UI
+pnpm test:ui
+
+# Run tests with coverage report
+pnpm test:coverage
+```
+
+**Test Coverage:** 96 tests with 95.54% code coverage covering:
+- Coast FIRE calculator: 41 tests (edge cases, mathematical formulas, input validation, performance, store integration)
+- Mortgage payoff calculator: 55 tests (amortization algorithm, investment comparisons, performance testing, store integration)
+- Mathematical edge cases, input validation, and performance testing
+- Comprehensive testing of all financial calculation logic
+
+### Testing Infrastructure
+
+- **Automated Testing**: Pre-commit hooks automatically run tests before each commit
+- **Coverage Reporting**: Use `pnpm test:coverage` to generate detailed coverage reports
+- **Continuous Testing**: Tests run in watch mode during development with `pnpm test --watch`
+- **Performance Testing**: Tests include performance benchmarks for large calculations
+- **Mathematical Verification**: All formulas are tested against manual calculations
+
 ## Project Structure
 
 ```

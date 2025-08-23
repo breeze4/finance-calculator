@@ -119,6 +119,8 @@ export const useMortgagePayoffStore = defineStore('mortgagePayoff', () => {
     investmentReturnRate,
     investmentTaxRate,
     showInvestmentComparison,
+    monthlyInterestRate,
+    totalMonths,
     basePayoffMonths,
     baseTotalInterest,
     acceleratedPayoffMonths,
