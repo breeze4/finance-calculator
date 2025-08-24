@@ -7,13 +7,18 @@ export const useCoastFireStore = defineStore('coastFire', () => {
   const currentSavings = ref(50000)
   const expectedReturnRate = ref(7)
   const targetRetirementAmount = ref(1000000)
+  const monthlyExpenses = ref(0)
+  const withdrawalRate = ref(4)
+  const lastEditedField = ref<'target' | 'monthly'>('target')
   
   const errors = ref({
     currentAge: '',
     retirementAge: '',
     currentSavings: '',
     expectedReturnRate: '',
-    targetRetirementAmount: ''
+    targetRetirementAmount: '',
+    monthlyExpenses: '',
+    withdrawalRate: ''
   })
   
   const validateInputs = () => {
@@ -22,7 +27,9 @@ export const useCoastFireStore = defineStore('coastFire', () => {
       retirementAge: '',
       currentSavings: '',
       expectedReturnRate: '',
-      targetRetirementAmount: ''
+      targetRetirementAmount: '',
+      monthlyExpenses: '',
+      withdrawalRate: ''
     }
     
     let isValid = true
@@ -57,6 +64,16 @@ export const useCoastFireStore = defineStore('coastFire', () => {
       isValid = false
     }
     
+    if (monthlyExpenses.value < 0) {
+      errors.value.monthlyExpenses = 'Monthly expenses cannot be negative'
+      isValid = false
+    }
+    
+    if (withdrawalRate.value < 2 || withdrawalRate.value > 8) {
+      errors.value.withdrawalRate = 'Withdrawal rate should be between 2% and 8%'
+      isValid = false
+    }
+    
     return isValid
   }
   
@@ -66,13 +83,18 @@ export const useCoastFireStore = defineStore('coastFire', () => {
     currentSavings.value = 50000
     expectedReturnRate.value = 7
     targetRetirementAmount.value = 1000000
+    monthlyExpenses.value = 0
+    withdrawalRate.value = 4
+    lastEditedField.value = 'target'
     // Clear validation errors
     errors.value = {
       currentAge: '',
       retirementAge: '',
       currentSavings: '',
       expectedReturnRate: '',
-      targetRetirementAmount: ''
+      targetRetirementAmount: '',
+      monthlyExpenses: '',
+      withdrawalRate: ''
     }
   }
   
@@ -87,15 +109,16 @@ export const useCoastFireStore = defineStore('coastFire', () => {
   })
   
   const isCoastFIREReady = computed(() => {
-    return futureValueOfCurrentSavings.value >= targetRetirementAmount.value
+    return futureValueOfCurrentSavings.value >= activeTargetAmount.value
   })
   
   const additionalSavingsNeeded = computed(() => {
     if (isCoastFIREReady.value) return 0
     const rate = expectedReturnRate.value / 100
     const years = yearsToRetirement.value
-    if (years === 0) return targetRetirementAmount.value - currentSavings.value
-    const presentValue = targetRetirementAmount.value / Math.pow(1 + rate, years)
+    const target = activeTargetAmount.value
+    if (years === 0) return target - currentSavings.value
+    const presentValue = target / Math.pow(1 + rate, years)
     return Math.max(0, presentValue - currentSavings.value)
   })
   
@@ -103,7 +126,8 @@ export const useCoastFireStore = defineStore('coastFire', () => {
     if (isCoastFIREReady.value) return currentAge.value
     
     const rate = expectedReturnRate.value / 100
-    const yearsNeeded = Math.log(targetRetirementAmount.value / currentSavings.value) / Math.log(1 + rate)
+    const target = activeTargetAmount.value
+    const yearsNeeded = Math.log(target / currentSavings.value) / Math.log(1 + rate)
     return Math.ceil(currentAge.value + yearsNeeded)
   })
   
@@ -125,7 +149,7 @@ export const useCoastFireStore = defineStore('coastFire', () => {
       projectedValues.push(projectedValue)
       
       // Target value is constant
-      targetValues.push(targetRetirementAmount.value)
+      targetValues.push(activeTargetAmount.value)
     }
     
     return {
@@ -152,6 +176,37 @@ export const useCoastFireStore = defineStore('coastFire', () => {
     }
   })
   
+  const targetFromMonthlyExpenses = computed(() => {
+    if (monthlyExpenses.value <= 0 || withdrawalRate.value <= 0) return 0
+    return (monthlyExpenses.value * 12) / (withdrawalRate.value / 100)
+  })
+  
+  const monthlyFromTarget = computed(() => {
+    if (targetRetirementAmount.value <= 0 || withdrawalRate.value <= 0) return 0
+    return (targetRetirementAmount.value * (withdrawalRate.value / 100)) / 12
+  })
+  
+  const activeTargetAmount = computed(() => {
+    if (lastEditedField.value === 'monthly' && monthlyExpenses.value > 0) {
+      return targetFromMonthlyExpenses.value
+    }
+    return targetRetirementAmount.value
+  })
+  
+  const syncFromMonthlyExpenses = () => {
+    lastEditedField.value = 'monthly'
+    if (monthlyExpenses.value > 0 && withdrawalRate.value > 0) {
+      targetRetirementAmount.value = targetFromMonthlyExpenses.value
+    }
+  }
+  
+  const syncFromTargetAmount = () => {
+    lastEditedField.value = 'target'
+    if (targetRetirementAmount.value > 0 && withdrawalRate.value > 0) {
+      monthlyExpenses.value = monthlyFromTarget.value
+    }
+  }
+  
   const requiredSavingsByAge = computed(() => {
     const ages: number[] = []
     const requiredSavings: number[] = []
@@ -164,10 +219,10 @@ export const useCoastFireStore = defineStore('coastFire', () => {
       
       const yearsToRetire = retirementAge.value - age
       if (yearsToRetire > 0) {
-        const presentValue = targetRetirementAmount.value / Math.pow(1 + rate, yearsToRetire)
+        const presentValue = activeTargetAmount.value / Math.pow(1 + rate, yearsToRetire)
         requiredSavings.push(presentValue)
       } else {
-        requiredSavings.push(targetRetirementAmount.value)
+        requiredSavings.push(activeTargetAmount.value)
       }
     }
     
@@ -192,6 +247,9 @@ export const useCoastFireStore = defineStore('coastFire', () => {
     currentSavings,
     expectedReturnRate,
     targetRetirementAmount,
+    monthlyExpenses,
+    withdrawalRate,
+    lastEditedField,
     errors,
     validateInputs,
     yearsToRetirement,
@@ -201,6 +259,11 @@ export const useCoastFireStore = defineStore('coastFire', () => {
     coastFIREAge,
     projectionChartData,
     requiredSavingsByAge,
+    targetFromMonthlyExpenses,
+    monthlyFromTarget,
+    activeTargetAmount,
+    syncFromMonthlyExpenses,
+    syncFromTargetAmount,
     resetToDefaults
   }
 }, {

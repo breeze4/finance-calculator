@@ -48,6 +48,7 @@ For task planning:
 - Create tasks that are atomic (smallest possible change without breaking the app)
 - Ensure tasks are incremental (each builds on the previous)
 - Keep the application fully functional after each task completion
+- Make sure any logic gets unit tests added for it. Don't add useless tests. Think carefully when adding tests to make sure it is useful to test. Tests should be focused on stateless logic/functional components. 
 
 ## Working instructions
 

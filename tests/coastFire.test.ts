@@ -612,8 +612,128 @@ describe('Coast FIRE Calculator', () => {
     })
   })
 
+  describe('monthly expenses and withdrawal rate calculations', () => {
+    it('calculates target from monthly expenses correctly', () => {
+      const store = useCoastFireStore()
+      
+      store.monthlyExpenses = 4000
+      store.withdrawalRate = 4
+      
+      // $4000/month * 12 months / 4% = $1,200,000
+      expect(store.targetFromMonthlyExpenses).toBe(1200000)
+    })
+
+    it('calculates monthly from target correctly', () => {
+      const store = useCoastFireStore()
+      
+      store.targetRetirementAmount = 1000000
+      store.withdrawalRate = 4
+      
+      // $1,000,000 * 4% / 12 = $3333.33
+      expect(store.monthlyFromTarget).toBeCloseTo(3333.33, 2)
+    })
+
+    it('handles zero values in calculations', () => {
+      const store = useCoastFireStore()
+      
+      store.monthlyExpenses = 0
+      store.withdrawalRate = 4
+      expect(store.targetFromMonthlyExpenses).toBe(0)
+
+      store.monthlyExpenses = 4000
+      store.withdrawalRate = 0
+      expect(store.targetFromMonthlyExpenses).toBe(0)
+    })
+
+    it('bidirectional sync works correctly', () => {
+      const store = useCoastFireStore()
+      
+      // Test syncing from monthly expenses
+      store.monthlyExpenses = 5000
+      store.withdrawalRate = 4
+      store.syncFromMonthlyExpenses()
+      
+      expect(store.lastEditedField).toBe('monthly')
+      expect(store.targetRetirementAmount).toBe(1500000) // $5000 * 12 / 0.04
+
+      // Test syncing from target amount
+      store.targetRetirementAmount = 2000000
+      store.syncFromTargetAmount()
+      
+      expect(store.lastEditedField).toBe('target')
+      expect(store.monthlyExpenses).toBeCloseTo(6666.67, 2) // $2M * 0.04 / 12
+    })
+
+    it('activeTargetAmount uses correct value based on last edited field', () => {
+      const store = useCoastFireStore()
+      
+      // When target was last edited
+      store.targetRetirementAmount = 1000000
+      store.monthlyExpenses = 4000
+      store.withdrawalRate = 4
+      store.lastEditedField = 'target'
+      
+      expect(store.activeTargetAmount).toBe(1000000)
+
+      // When monthly was last edited and has value > 0
+      store.lastEditedField = 'monthly'
+      expect(store.activeTargetAmount).toBe(1200000) // calculated from monthly
+
+      // When monthly was last edited but is 0
+      store.monthlyExpenses = 0
+      store.lastEditedField = 'monthly'
+      expect(store.activeTargetAmount).toBe(1000000) // falls back to target
+    })
+
+    it('calculations use activeTargetAmount correctly', () => {
+      const store = useCoastFireStore()
+      
+      store.currentAge = 30
+      store.retirementAge = 65
+      store.currentSavings = 100000
+      store.expectedReturnRate = 7
+      store.monthlyExpenses = 4000
+      store.withdrawalRate = 4
+      store.lastEditedField = 'monthly'
+
+      // Should use target from monthly expenses ($1.2M) instead of targetRetirementAmount
+      const futureValue = store.futureValueOfCurrentSavings
+      expect(store.isCoastFIREReady).toBe(futureValue >= 1200000)
+    })
+  })
+
+  describe('validation for new fields', () => {
+    it('validates withdrawal rate range', () => {
+      const store = useCoastFireStore()
+      
+      store.withdrawalRate = 1
+      store.validateInputs()
+      expect(store.errors.withdrawalRate).toContain('between 2% and 8%')
+
+      store.withdrawalRate = 10
+      store.validateInputs()
+      expect(store.errors.withdrawalRate).toContain('between 2% and 8%')
+
+      store.withdrawalRate = 4
+      store.validateInputs()
+      expect(store.errors.withdrawalRate).toBe('')
+    })
+
+    it('validates monthly expenses not negative', () => {
+      const store = useCoastFireStore()
+      
+      store.monthlyExpenses = -100
+      store.validateInputs()
+      expect(store.errors.monthlyExpenses).toContain('cannot be negative')
+
+      store.monthlyExpenses = 0
+      store.validateInputs()
+      expect(store.errors.monthlyExpenses).toBe('')
+    })
+  })
+
   describe('resetToDefaults functionality', () => {
-    it('should reset all values to defaults', () => {
+    it('should reset all values to defaults including new fields', () => {
       const store = useCoastFireStore()
       
       // Change values from defaults
@@ -622,6 +742,9 @@ describe('Coast FIRE Calculator', () => {
       store.currentSavings = 100000
       store.expectedReturnRate = 10
       store.targetRetirementAmount = 2000000
+      store.monthlyExpenses = 5000
+      store.withdrawalRate = 6
+      store.lastEditedField = 'monthly'
       
       // Add some validation errors
       store.currentAge = 17
@@ -637,6 +760,9 @@ describe('Coast FIRE Calculator', () => {
       expect(store.currentSavings).toBe(50000)
       expect(store.expectedReturnRate).toBe(7)
       expect(store.targetRetirementAmount).toBe(1000000)
+      expect(store.monthlyExpenses).toBe(0)
+      expect(store.withdrawalRate).toBe(4)
+      expect(store.lastEditedField).toBe('target')
       
       // Check that errors are cleared
       expect(store.errors.currentAge).toBe('')
@@ -644,6 +770,8 @@ describe('Coast FIRE Calculator', () => {
       expect(store.errors.currentSavings).toBe('')
       expect(store.errors.expectedReturnRate).toBe('')
       expect(store.errors.targetRetirementAmount).toBe('')
+      expect(store.errors.monthlyExpenses).toBe('')
+      expect(store.errors.withdrawalRate).toBe('')
     })
   })
 

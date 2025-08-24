@@ -109,7 +109,7 @@ const formatPercent = (value: number) => {
         <div class="form-group">
           <label for="target-amount">
             Target Retirement Amount
-            <span class="help-icon" title="How much you want to have saved by retirement">?</span>
+            <span class="help-icon" title="Total amount you want saved by retirement (automatically calculated if you enter monthly expenses)">?</span>
           </label>
           <input 
             id="target-amount"
@@ -118,8 +118,43 @@ const formatPercent = (value: number) => {
             min="0"
             step="10000"
             :class="{ 'error': store.errors.targetRetirementAmount }"
+            @input="store.syncFromTargetAmount"
           />
           <span v-if="store.errors.targetRetirementAmount" class="error-message">{{ store.errors.targetRetirementAmount }}</span>
+        </div>
+        
+        <div class="form-group">
+          <label for="monthly-expenses">
+            Monthly Expenses in Retirement
+            <span class="help-icon" title="How much you want to spend per month in retirement (leave 0 to use target amount)">?</span>
+          </label>
+          <input 
+            id="monthly-expenses"
+            type="number" 
+            v-model.number="store.monthlyExpenses"
+            min="0"
+            step="100"
+            :class="{ 'error': store.errors.monthlyExpenses }"
+            @input="store.syncFromMonthlyExpenses"
+          />
+          <span v-if="store.errors.monthlyExpenses" class="error-message">{{ store.errors.monthlyExpenses }}</span>
+        </div>
+        
+        <div class="form-group">
+          <label for="withdrawal-rate">
+            Safe Withdrawal Rate (%)
+            <span class="help-icon" title="Percentage of portfolio to withdraw annually (4% is the traditional rule)">?</span>
+          </label>
+          <input 
+            id="withdrawal-rate"
+            type="number" 
+            v-model.number="store.withdrawalRate"
+            min="2"
+            max="8"
+            step="0.1"
+            :class="{ 'error': store.errors.withdrawalRate }"
+          />
+          <span v-if="store.errors.withdrawalRate" class="error-message">{{ store.errors.withdrawalRate }}</span>
         </div>
         
         <button @click="handleReset" class="secondary">
@@ -153,7 +188,12 @@ const formatPercent = (value: number) => {
         
         <div class="result-item">
           <span class="label">Target Retirement Amount:</span>
-          <span class="value">{{ formatCurrency(store.targetRetirementAmount) }}</span>
+          <span class="value">{{ formatCurrency(store.activeTargetAmount) }}</span>
+        </div>
+        
+        <div v-if="store.monthlyExpenses > 0" class="result-item">
+          <span class="label">Monthly Spending Available:</span>
+          <span class="value">{{ formatCurrency(store.monthlyFromTarget) }}</span>
         </div>
         
         <div v-if="!store.isCoastFIREReady" class="result-item">
@@ -171,12 +211,16 @@ const formatPercent = (value: number) => {
             Your current savings of {{ formatCurrency(store.currentSavings) }} will grow to 
             {{ formatCurrency(store.futureValueOfCurrentSavings) }} by age {{ store.retirementAge }} 
             at {{ formatPercent(store.expectedReturnRate) }} annual return, exceeding your target of 
-            {{ formatCurrency(store.targetRetirementAmount) }}.
+            {{ formatCurrency(store.activeTargetAmount) }}.
           </p>
           <p v-else>
             To reach Coast FIRE now, you need {{ formatCurrency(store.additionalSavingsNeeded) }} 
             more in savings. With your current savings of {{ formatCurrency(store.currentSavings) }}, 
             you'll reach Coast FIRE at age {{ store.coastFIREAge }}.
+          </p>
+          <p v-if="store.monthlyExpenses > 0" class="calculation-note">
+            Based on {{ formatCurrency(store.monthlyExpenses) }}/month expenses and 
+            {{ store.withdrawalRate }}% withdrawal rate ({{ formatCurrency(store.monthlyExpenses * 12) }}/year).
           </p>
         </div>
       </div>
@@ -323,6 +367,13 @@ h2 {
   border-radius: 4px;
   line-height: 1.6;
   color: #666;
+}
+
+.calculation-note {
+  font-size: 0.9rem;
+  color: #888;
+  font-style: italic;
+  margin-top: 0.5rem;
 }
 
 button {
