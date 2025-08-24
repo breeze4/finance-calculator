@@ -271,6 +271,11 @@ const formatPercent = (value: number) => {
           <span class="value">{{ store.coastFIREAge }} years old</span>
         </div>
         
+        <div class="result-item">
+          <span class="label">Coast FIRE Number at Current Age:</span>
+          <span class="value">{{ formatCurrency(store.coastFIRENumber) }}</span>
+        </div>
+        
         <div class="explanation">
           <p v-if="store.isCoastFIREReady">
             Your current savings of {{ formatCurrency(store.currentSavings) }} will grow to 
@@ -295,6 +300,10 @@ const formatPercent = (value: number) => {
           <p v-if="store.monthlyExpenses > 0 || store.yearlyExpenses > 0" class="calculation-note">
             Based on {{ formatCurrency(store.monthlyExpenses) }}/month ({{ formatCurrency(store.yearlyExpenses) }}/year) and 
             {{ store.withdrawalRate }}% withdrawal rate.
+          </p>
+          <p class="calculation-note">
+            <strong>Coast FIRE Number:</strong> {{ formatCurrency(store.coastFIRENumber) }} is the exact amount you need saved at age {{ store.currentAge }} 
+            to reach your retirement goal by age {{ store.retirementAge }} with {{ formatPercent(Number(store.effectiveReturnRate.toFixed(2))) }} returns.
           </p>
         </div>
       </div>

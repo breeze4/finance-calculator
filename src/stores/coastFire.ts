@@ -182,6 +182,22 @@ export const useCoastFireStore = defineStore('coastFire', () => {
     return Math.ceil(currentAge.value + yearsNeeded)
   })
   
+  // Coast FIRE number: the amount you need saved right now to coast to retirement
+  const coastFIRENumber = computed(() => {
+    const rate = effectiveReturnRate.value / 100
+    const years = yearsToRetirement.value
+    const target = inflationAdjustedTarget.value
+    
+    if (years === 0) {
+      // If retiring this year, need the full target amount
+      return target
+    }
+    
+    // Present value calculation: how much do you need today for it to grow to the target
+    // PV = FV / (1 + r)^t
+    return target / Math.pow(1 + rate, years)
+  })
+  
   const projectionChartData = computed(() => {
     const ages: number[] = []
     const projectedValues: number[] = []
@@ -347,6 +363,7 @@ export const useCoastFireStore = defineStore('coastFire', () => {
     isCoastFIREReady,
     additionalSavingsNeeded,
     coastFIREAge,
+    coastFIRENumber,
     projectionChartData,
     requiredSavingsByAge,
     targetFromMonthlyExpenses,

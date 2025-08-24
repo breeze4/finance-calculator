@@ -1232,6 +1232,176 @@ describe('Coast FIRE Calculator', () => {
     })
   })
 
+  describe('Coast FIRE number calculation', () => {
+    it('calculates Coast FIRE number correctly using present value', () => {
+      const store = useCoastFireStore()
+      
+      store.currentAge = 30
+      store.retirementAge = 65
+      store.expectedReturnRate = 7
+      store.targetRetirementAmount = 1000000
+      store.useRealReturns = false
+      store.inflationRate = 0
+      
+      // Coast FIRE number = PV of target amount
+      // PV = 1,000,000 / (1.07)^35 = ~93,663
+      const years = 35
+      const expected = 1000000 / Math.pow(1.07, years)
+      
+      expect(store.coastFIRENumber).toBeCloseTo(expected, 0)
+    })
+
+    it('returns target amount when years to retirement is zero', () => {
+      const store = useCoastFireStore()
+      
+      store.currentAge = 65
+      store.retirementAge = 65 // Retiring this year
+      store.targetRetirementAmount = 500000
+      
+      // If retiring immediately, need the full target amount
+      expect(store.coastFIRENumber).toBe(500000)
+    })
+
+    it('uses inflation-adjusted target when using nominal returns', () => {
+      const store = useCoastFireStore()
+      
+      store.currentAge = 30
+      store.retirementAge = 65
+      store.expectedReturnRate = 7
+      store.targetRetirementAmount = 1000000
+      store.inflationRate = 3
+      store.useRealReturns = false // Use nominal returns
+      
+      // With 3% inflation over 35 years, target becomes ~2.8M
+      const inflatedTarget = 1000000 * Math.pow(1.03, 35)
+      // Coast FIRE number = PV of inflated target
+      const expected = inflatedTarget / Math.pow(1.07, 35)
+      
+      expect(store.coastFIRENumber).toBeCloseTo(expected, 0)
+    })
+
+    it('uses real returns when inflation adjustment is enabled', () => {
+      const store = useCoastFireStore()
+      
+      store.currentAge = 30
+      store.retirementAge = 60
+      store.expectedReturnRate = 8
+      store.inflationRate = 3
+      store.targetRetirementAmount = 800000
+      store.useRealReturns = true
+      
+      // Real rate = (1.08 / 1.03) - 1 ≈ 4.854%
+      const realRate = ((1.08 / 1.03) - 1)
+      const years = 30
+      // Target stays at 800k (no inflation adjustment with real returns)
+      const expected = 800000 / Math.pow(1 + realRate, years)
+      
+      expect(store.coastFIRENumber).toBeCloseTo(expected, 0)
+    })
+
+    it('matches additional savings needed when current savings is zero', () => {
+      const store = useCoastFireStore()
+      
+      store.currentAge = 25
+      store.retirementAge = 60
+      store.currentSavings = 0
+      store.expectedReturnRate = 6
+      store.targetRetirementAmount = 1200000
+      
+      // When current savings is 0, Coast FIRE number should equal additional savings needed
+      expect(store.coastFIRENumber).toBe(store.additionalSavingsNeeded)
+    })
+
+    it('calculates correctly with expense-based targets', () => {
+      const store = useCoastFireStore()
+      
+      store.currentAge = 35
+      store.retirementAge = 65
+      store.monthlyExpenses = 5000
+      store.withdrawalRate = 4
+      store.expectedReturnRate = 7
+      store.syncFromMonthlyExpenses()
+      
+      // Target = $5000 * 12 / 0.04 = $1.5M
+      // Coast FIRE number = PV of $1.5M over 30 years at 7%
+      const target = (5000 * 12) / 0.04
+      const expected = target / Math.pow(1.07, 30)
+      
+      expect(store.coastFIRENumber).toBeCloseTo(expected, 0)
+    })
+
+    it('provides meaningful comparison to current savings when not Coast FIRE ready', () => {
+      const store = useCoastFireStore()
+      
+      // Set up scenario where person is definitely NOT Coast FIRE ready
+      store.currentAge = 40
+      store.retirementAge = 65
+      store.currentSavings = 50000  // Lower amount to ensure not Coast FIRE ready
+      store.expectedReturnRate = 6  // Lower return rate
+      store.targetRetirementAmount = 1500000  // Higher target
+      
+      // Verify they are not Coast FIRE ready
+      expect(store.isCoastFIREReady).toBe(false)
+      
+      // Current savings + additional needed should equal Coast FIRE number
+      const coastFireNumber = store.coastFIRENumber
+      const additionalNeeded = store.additionalSavingsNeeded
+      expect(store.currentSavings + additionalNeeded).toBeCloseTo(coastFireNumber, 0)
+    })
+
+    it('handles Coast FIRE ready scenario correctly', () => {
+      const store = useCoastFireStore()
+      
+      // Set up scenario where person IS Coast FIRE ready
+      store.currentAge = 50
+      store.retirementAge = 65
+      store.currentSavings = 500000  // High amount
+      store.expectedReturnRate = 8   // Good return rate
+      store.targetRetirementAmount = 800000  // Lower target
+      
+      // Verify they ARE Coast FIRE ready
+      expect(store.isCoastFIREReady).toBe(true)
+      
+      // When Coast FIRE ready, additional needed should be 0
+      expect(store.additionalSavingsNeeded).toBe(0)
+      
+      // Coast FIRE number should be less than current savings
+      expect(store.coastFIRENumber).toBeLessThan(store.currentSavings)
+    })
+
+    it('handles high return rates correctly', () => {
+      const store = useCoastFireStore()
+      
+      store.currentAge = 25
+      store.retirementAge = 65
+      store.expectedReturnRate = 12
+      store.targetRetirementAmount = 2000000
+      
+      // With high return rate, Coast FIRE number should be much lower
+      const years = 40
+      const expected = 2000000 / Math.pow(1.12, years)
+      
+      expect(store.coastFIRENumber).toBeCloseTo(expected, 0)
+      expect(store.coastFIRENumber).toBeLessThan(200000) // Should be quite low
+    })
+
+    it('handles low return rates correctly', () => {
+      const store = useCoastFireStore()
+      
+      store.currentAge = 35
+      store.retirementAge = 65
+      store.expectedReturnRate = 3
+      store.targetRetirementAmount = 800000
+      
+      // With low return rate, Coast FIRE number should be higher
+      const years = 30
+      const expected = 800000 / Math.pow(1.03, years)
+      
+      expect(store.coastFIRENumber).toBeCloseTo(expected, 0)
+      expect(store.coastFIRENumber).toBeGreaterThan(300000) // Should be relatively high
+    })
+  })
+
   describe('validation for new fields', () => {
     it('validates withdrawal rate range', () => {
       const store = useCoastFireStore()

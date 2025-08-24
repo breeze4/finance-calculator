@@ -66,12 +66,12 @@ Where:
 ```
 
 #### 5. Coast FIRE Age Calculation
-**Source:** `src/stores/coastFire.ts:125-132`
+**Source:** `src/stores/coastFire.ts:176-183`
 ```javascript
 if (isCoastFIREReady) return currentAge
 
-rate = expectedReturnRate / 100
-target = activeTargetAmount
+rate = effectiveReturnRate / 100
+target = inflationAdjustedTarget
 yearsNeeded = Math.log(target / currentSavings) / Math.log(1 + rate)
 coastFIREAge = Math.ceil(currentAge + yearsNeeded)
 ```
@@ -85,13 +85,41 @@ coastFIREAge = ceiling(currentAge + yearsNeeded)
 
 Where:
 - ln = natural logarithm (Math.log in JavaScript)
-- r = Annual return rate as decimal
+- r = Effective return rate as decimal (real or nominal based on inflation setting)
+- target = Inflation-adjusted target amount
 - ceiling = round up to nearest integer (Math.ceil)
+```
+
+#### 6. Coast FIRE Number at Current Age
+**Source:** `src/stores/coastFire.ts:185-199`
+```javascript
+rate = effectiveReturnRate / 100
+years = yearsToRetirement
+target = inflationAdjustedTarget
+
+if (years === 0) return target
+
+coastFIRENumber = target / Math.pow(1 + rate, years)
+```
+**Mathematical Formula:**
+```
+If years to retirement = 0: coastFIRENumber = target
+
+Otherwise:
+coastFIRENumber = target ÷ (1 + r)^t
+
+Where:
+- r = Effective return rate as decimal (real or nominal based on inflation setting)
+- t = Years to retirement
+- target = Inflation-adjusted target amount
+
+This calculates the present value of the target amount - the exact amount 
+you need saved at your current age to coast to your retirement goal.
 ```
 
 ### Additional Calculations
 
-#### 6. Target from Monthly Expenses
+#### 7. Target from Monthly Expenses
 **Source:** `src/stores/coastFire.ts:179-182`
 ```javascript
 if (monthlyExpenses <= 0 || withdrawalRate <= 0) return 0
@@ -105,7 +133,7 @@ This uses the 4% rule (or specified withdrawal rate) to calculate
 the total needed based on annual expenses.
 ```
 
-#### 7. Monthly from Target Amount
+#### 8. Monthly from Target Amount
 **Source:** `src/stores/coastFire.ts:184-187`
 ```javascript
 if (targetRetirementAmount <= 0 || withdrawalRate <= 0) return 0
