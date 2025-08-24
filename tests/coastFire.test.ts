@@ -1058,6 +1058,180 @@ describe('Coast FIRE Calculator', () => {
     })
   })
 
+  describe('inflation calculations', () => {
+    it('calculates real return rate using Fisher equation', () => {
+      const store = useCoastFireStore()
+      
+      store.expectedReturnRate = 7
+      store.inflationRate = 3
+      store.useRealReturns = true
+      
+      // Fisher equation: (1.07 / 1.03) - 1 = 0.03883 = 3.883%
+      expect(store.realReturnRate).toBeCloseTo(3.883, 2)
+    })
+
+    it('uses nominal returns when useRealReturns is false', () => {
+      const store = useCoastFireStore()
+      
+      store.expectedReturnRate = 7
+      store.inflationRate = 3
+      store.useRealReturns = false
+      
+      expect(store.effectiveReturnRate).toBe(7)
+    })
+
+    it('uses real returns when useRealReturns is true', () => {
+      const store = useCoastFireStore()
+      
+      store.expectedReturnRate = 7
+      store.inflationRate = 3
+      store.useRealReturns = true
+      
+      expect(store.effectiveReturnRate).toBeCloseTo(3.883, 2)
+    })
+
+    it('adjusts target for inflation when using nominal returns', () => {
+      const store = useCoastFireStore()
+      
+      store.currentAge = 30
+      store.retirementAge = 65
+      store.targetRetirementAmount = 1000000
+      store.inflationRate = 3
+      store.useRealReturns = false
+      
+      // 35 years of 3% inflation: 1M * (1.03)^35 = 2,813,862
+      const expected = 1000000 * Math.pow(1.03, 35)
+      expect(store.inflationAdjustedTarget).toBeCloseTo(expected, 0)
+    })
+
+    it('does not adjust target when using real returns', () => {
+      const store = useCoastFireStore()
+      
+      store.currentAge = 30
+      store.retirementAge = 65
+      store.targetRetirementAmount = 1000000
+      store.inflationRate = 3
+      store.useRealReturns = true
+      
+      // Target stays the same with real returns
+      expect(store.inflationAdjustedTarget).toBe(1000000)
+    })
+
+    it('calculates future value with real returns correctly', () => {
+      const store = useCoastFireStore()
+      
+      store.currentAge = 30
+      store.retirementAge = 65
+      store.currentSavings = 100000
+      store.expectedReturnRate = 7
+      store.inflationRate = 3
+      store.useRealReturns = true
+      
+      // Real rate ≈ 3.883%, 35 years
+      const realRate = ((1.07 / 1.03) - 1)
+      const expected = 100000 * Math.pow(1 + realRate, 35)
+      expect(store.futureValueOfCurrentSavings).toBeCloseTo(expected, 0)
+    })
+
+    it('calculates Coast FIRE readiness with inflation', () => {
+      const store = useCoastFireStore()
+      
+      store.currentAge = 30
+      store.retirementAge = 65
+      store.currentSavings = 200000
+      store.expectedReturnRate = 7
+      store.inflationRate = 2
+      store.targetRetirementAmount = 500000
+      
+      // Test with real returns
+      store.useRealReturns = true
+      const realRate = ((1.07 / 1.02) - 1)
+      const futureValueReal = 200000 * Math.pow(1 + realRate, 35)
+      const isReadyReal = futureValueReal >= 500000
+      expect(store.isCoastFIREReady).toBe(isReadyReal)
+      
+      // Test with nominal returns
+      store.useRealReturns = false
+      const futureValueNominal = 200000 * Math.pow(1.07, 35)
+      const inflatedTarget = 500000 * Math.pow(1.02, 35)
+      const isReadyNominal = futureValueNominal >= inflatedTarget
+      expect(store.isCoastFIREReady).toBe(isReadyNominal)
+    })
+
+    it('validates inflation rate range', () => {
+      const store = useCoastFireStore()
+      
+      store.inflationRate = -1
+      store.validateInputs()
+      expect(store.errors.inflationRate).toContain('between 0% and 10%')
+      
+      store.inflationRate = 11
+      store.validateInputs()
+      expect(store.errors.inflationRate).toContain('between 0% and 10%')
+      
+      store.inflationRate = 3
+      store.validateInputs()
+      expect(store.errors.inflationRate).toBe('')
+    })
+
+    it('handles zero inflation correctly', () => {
+      const store = useCoastFireStore()
+      
+      store.expectedReturnRate = 7
+      store.inflationRate = 0
+      store.useRealReturns = true
+      
+      // With zero inflation, real rate equals nominal rate
+      expect(store.realReturnRate).toBeCloseTo(7, 10)
+      expect(store.effectiveReturnRate).toBeCloseTo(7, 10)
+    })
+
+    it('handles high inflation scenarios', () => {
+      const store = useCoastFireStore()
+      
+      store.expectedReturnRate = 8
+      store.inflationRate = 6
+      store.useRealReturns = true
+      
+      // Real return = (1.08 / 1.06) - 1 ≈ 1.887%
+      expect(store.realReturnRate).toBeCloseTo(1.887, 2)
+    })
+
+    it('resets inflation settings to defaults', () => {
+      const store = useCoastFireStore()
+      
+      // Change from defaults
+      store.inflationRate = 5
+      store.useRealReturns = false
+      
+      // Reset
+      store.resetToDefaults()
+      
+      expect(store.inflationRate).toBe(0)
+      expect(store.useRealReturns).toBe(false)
+    })
+
+    it('projection chart adjusts for inflation', () => {
+      const store = useCoastFireStore()
+      
+      store.currentAge = 30
+      store.retirementAge = 35 // 5 years
+      store.currentSavings = 100000
+      store.expectedReturnRate = 7
+      store.inflationRate = 3
+      store.targetRetirementAmount = 150000
+      store.useRealReturns = false // Use nominal returns
+      
+      const chartData = store.projectionChartData
+      const targetLine = chartData.datasets[1].data as number[]
+      
+      // Target should increase each year with inflation
+      expect(targetLine[0]).toBe(150000) // Year 0
+      expect(targetLine[1]).toBeCloseTo(150000 * 1.03, 0) // Year 1
+      expect(targetLine[5]).toBeCloseTo(150000 * Math.pow(1.03, 5), 0) // Year 5
+    })
+  })
+
   describe('validation for new fields', () => {
     it('validates withdrawal rate range', () => {
       const store = useCoastFireStore()

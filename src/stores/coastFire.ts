@@ -10,6 +10,8 @@ export const useCoastFireStore = defineStore('coastFire', () => {
   const monthlyExpenses = ref(0)
   const yearlyExpenses = ref(0)
   const withdrawalRate = ref(4)
+  const inflationRate = ref(0)
+  const useRealReturns = ref(false)
   const lastEditedField = ref<'target' | 'monthly' | 'yearly'>('target')
   
   const errors = ref({
@@ -20,7 +22,8 @@ export const useCoastFireStore = defineStore('coastFire', () => {
     targetRetirementAmount: '',
     monthlyExpenses: '',
     yearlyExpenses: '',
-    withdrawalRate: ''
+    withdrawalRate: '',
+    inflationRate: ''
   })
   
   const validateInputs = () => {
@@ -32,7 +35,8 @@ export const useCoastFireStore = defineStore('coastFire', () => {
       targetRetirementAmount: '',
       monthlyExpenses: '',
       yearlyExpenses: '',
-      withdrawalRate: ''
+      withdrawalRate: '',
+      inflationRate: ''
     }
     
     let isValid = true
@@ -82,6 +86,11 @@ export const useCoastFireStore = defineStore('coastFire', () => {
       isValid = false
     }
     
+    if (inflationRate.value < 0 || inflationRate.value > 10) {
+      errors.value.inflationRate = 'Inflation rate should be between 0% and 10%'
+      isValid = false
+    }
+    
     return isValid
   }
   
@@ -94,6 +103,8 @@ export const useCoastFireStore = defineStore('coastFire', () => {
     monthlyExpenses.value = 0
     yearlyExpenses.value = 0
     withdrawalRate.value = 4
+    inflationRate.value = 0
+    useRealReturns.value = false
     lastEditedField.value = 'target'
     // Clear validation errors
     errors.value = {
@@ -104,7 +115,8 @@ export const useCoastFireStore = defineStore('coastFire', () => {
       targetRetirementAmount: '',
       monthlyExpenses: '',
       yearlyExpenses: '',
-      withdrawalRate: ''
+      withdrawalRate: '',
+      inflationRate: ''
     }
   }
   
@@ -112,21 +124,50 @@ export const useCoastFireStore = defineStore('coastFire', () => {
     return Math.max(0, retirementAge.value - currentAge.value)
   })
   
+  // Calculate the real (inflation-adjusted) return rate using Fisher equation
+  const realReturnRate = computed(() => {
+    if (!useRealReturns.value) return expectedReturnRate.value
+    
+    const nominal = expectedReturnRate.value / 100
+    const inflation = inflationRate.value / 100
+    
+    // Fisher equation: realReturn = (1 + nominal) / (1 + inflation) - 1
+    const real = ((1 + nominal) / (1 + inflation)) - 1
+    return real * 100 // Convert back to percentage
+  })
+  
+  // The effective rate to use in calculations (real or nominal based on setting)
+  const effectiveReturnRate = computed(() => {
+    return useRealReturns.value ? realReturnRate.value : expectedReturnRate.value
+  })
+  
   const futureValueOfCurrentSavings = computed(() => {
-    const rate = expectedReturnRate.value / 100
+    const rate = effectiveReturnRate.value / 100
     const years = yearsToRetirement.value
     return currentSavings.value * Math.pow(1 + rate, years)
   })
   
+  // If using nominal returns, we need to adjust the target for inflation
+  const inflationAdjustedTarget = computed(() => {
+    if (useRealReturns.value) {
+      // When using real returns, target stays in today's dollars
+      return activeTargetAmount.value
+    } else {
+      // When using nominal returns, adjust target for inflation
+      const inflationMultiplier = Math.pow(1 + inflationRate.value / 100, yearsToRetirement.value)
+      return activeTargetAmount.value * inflationMultiplier
+    }
+  })
+  
   const isCoastFIREReady = computed(() => {
-    return futureValueOfCurrentSavings.value >= activeTargetAmount.value
+    return futureValueOfCurrentSavings.value >= inflationAdjustedTarget.value
   })
   
   const additionalSavingsNeeded = computed(() => {
     if (isCoastFIREReady.value) return 0
-    const rate = expectedReturnRate.value / 100
+    const rate = effectiveReturnRate.value / 100
     const years = yearsToRetirement.value
-    const target = activeTargetAmount.value
+    const target = inflationAdjustedTarget.value
     if (years === 0) return target - currentSavings.value
     const presentValue = target / Math.pow(1 + rate, years)
     return Math.max(0, presentValue - currentSavings.value)
@@ -135,8 +176,8 @@ export const useCoastFireStore = defineStore('coastFire', () => {
   const coastFIREAge = computed(() => {
     if (isCoastFIREReady.value) return currentAge.value
     
-    const rate = expectedReturnRate.value / 100
-    const target = activeTargetAmount.value
+    const rate = effectiveReturnRate.value / 100
+    const target = inflationAdjustedTarget.value
     const yearsNeeded = Math.log(target / currentSavings.value) / Math.log(1 + rate)
     return Math.ceil(currentAge.value + yearsNeeded)
   })
@@ -146,7 +187,7 @@ export const useCoastFireStore = defineStore('coastFire', () => {
     const projectedValues: number[] = []
     const targetValues: number[] = []
     
-    const rate = expectedReturnRate.value / 100
+    const rate = effectiveReturnRate.value / 100
     const years = yearsToRetirement.value
     
     // Generate data points for each year from current age to retirement
@@ -158,8 +199,9 @@ export const useCoastFireStore = defineStore('coastFire', () => {
       const projectedValue = currentSavings.value * Math.pow(1 + rate, i)
       projectedValues.push(projectedValue)
       
-      // Target value is constant
-      targetValues.push(activeTargetAmount.value)
+      // Target value adjusts for inflation if using nominal returns
+      const inflationMultiplier = useRealReturns.value ? 1 : Math.pow(1 + inflationRate.value / 100, i)
+      targetValues.push(activeTargetAmount.value * inflationMultiplier)
     }
     
     return {
@@ -250,7 +292,7 @@ export const useCoastFireStore = defineStore('coastFire', () => {
     const ages: number[] = []
     const requiredSavings: number[] = []
     
-    const rate = expectedReturnRate.value / 100
+    const rate = effectiveReturnRate.value / 100
     
     // Calculate required savings for ages from 20 to 50
     for (let age = 20; age <= 50; age += 5) {
@@ -258,7 +300,10 @@ export const useCoastFireStore = defineStore('coastFire', () => {
       
       const yearsToRetire = retirementAge.value - age
       if (yearsToRetire > 0) {
-        const presentValue = activeTargetAmount.value / Math.pow(1 + rate, yearsToRetire)
+        // Calculate the inflation-adjusted target for this specific age
+        const inflationMultiplier = useRealReturns.value ? 1 : Math.pow(1 + inflationRate.value / 100, yearsToRetire)
+        const adjustedTarget = activeTargetAmount.value * inflationMultiplier
+        const presentValue = adjustedTarget / Math.pow(1 + rate, yearsToRetire)
         requiredSavings.push(presentValue)
       } else {
         requiredSavings.push(activeTargetAmount.value)
@@ -289,10 +334,15 @@ export const useCoastFireStore = defineStore('coastFire', () => {
     monthlyExpenses,
     yearlyExpenses,
     withdrawalRate,
+    inflationRate,
+    useRealReturns,
     lastEditedField,
     errors,
     validateInputs,
     yearsToRetirement,
+    realReturnRate,
+    effectiveReturnRate,
+    inflationAdjustedTarget,
     futureValueOfCurrentSavings,
     isCoastFIREReady,
     additionalSavingsNeeded,

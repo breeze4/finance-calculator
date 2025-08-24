@@ -16,7 +16,8 @@ const handleReset = () => {
 
 watch([() => store.currentAge, () => store.retirementAge, () => store.currentSavings, 
        () => store.expectedReturnRate, () => store.targetRetirementAmount, 
-       () => store.monthlyExpenses, () => store.yearlyExpenses], () => {
+       () => store.monthlyExpenses, () => store.yearlyExpenses,
+       () => store.withdrawalRate, () => store.inflationRate], () => {
   store.validateInputs()
 })
 
@@ -177,6 +178,45 @@ const formatPercent = (value: number) => {
           <span v-if="store.errors.withdrawalRate" class="error-message">{{ store.errors.withdrawalRate }}</span>
         </div>
         
+        <div class="form-group">
+          <label for="inflation-rate">
+            Expected Inflation Rate (%)
+            <span class="help-icon" title="Average annual inflation rate (3% is typical, 0% to disable)">?</span>
+          </label>
+          <input 
+            id="inflation-rate"
+            type="number" 
+            v-model.number="store.inflationRate"
+            min="0"
+            max="10"
+            step="0.1"
+            :class="{ 'error': store.errors.inflationRate }"
+          />
+          <span v-if="store.errors.inflationRate" class="error-message">{{ store.errors.inflationRate }}</span>
+        </div>
+        
+        <div class="form-group">
+          <label for="use-real-returns" class="checkbox-label">
+            <input 
+              id="use-real-returns"
+              type="checkbox" 
+              v-model="store.useRealReturns"
+            />
+            <span>
+              Use Real (Inflation-Adjusted) Returns
+              <span class="help-icon" title="When checked, calculations use inflation-adjusted returns. When unchecked, uses nominal returns and adjusts the target for inflation.">?</span>
+            </span>
+          </label>
+          <div class="info-text">
+            <span v-if="store.useRealReturns">
+              Using real return of {{ formatPercent(Number(store.realReturnRate.toFixed(2))) }} ({{ formatPercent(store.expectedReturnRate) }} nominal - {{ formatPercent(store.inflationRate) }} inflation)
+            </span>
+            <span v-else>
+              Using nominal return of {{ formatPercent(store.expectedReturnRate) }}, target will be adjusted for {{ formatPercent(store.inflationRate) }} inflation
+            </span>
+          </div>
+        </div>
+        
         <button @click="handleReset" class="secondary">
           Reset to Defaults
         </button>
@@ -207,8 +247,13 @@ const formatPercent = (value: number) => {
         </div>
         
         <div class="result-item">
-          <span class="label">Target Retirement Amount:</span>
+          <span class="label">Target Retirement Amount{{ !store.useRealReturns ? ' (Today\'s $)' : '' }}:</span>
           <span class="value">{{ formatCurrency(store.activeTargetAmount) }}</span>
+        </div>
+        
+        <div v-if="!store.useRealReturns" class="result-item">
+          <span class="label">Inflation-Adjusted Target:</span>
+          <span class="value">{{ formatCurrency(store.inflationAdjustedTarget) }}</span>
         </div>
         
         <div v-if="store.monthlyExpenses > 0" class="result-item">
@@ -230,13 +275,22 @@ const formatPercent = (value: number) => {
           <p v-if="store.isCoastFIREReady">
             Your current savings of {{ formatCurrency(store.currentSavings) }} will grow to 
             {{ formatCurrency(store.futureValueOfCurrentSavings) }} by age {{ store.retirementAge }} 
-            at {{ formatPercent(store.expectedReturnRate) }} annual return, exceeding your target of 
-            {{ formatCurrency(store.activeTargetAmount) }}.
+            at {{ formatPercent(Number(store.effectiveReturnRate.toFixed(2))) }} {{ store.useRealReturns ? 'real' : 'nominal' }} return, 
+            exceeding your target of {{ formatCurrency(store.inflationAdjustedTarget) }}{{ !store.useRealReturns ? ' (inflation-adjusted)' : '' }}.
           </p>
           <p v-else>
             To reach Coast FIRE now, you need {{ formatCurrency(store.additionalSavingsNeeded) }} 
             more in savings. With your current savings of {{ formatCurrency(store.currentSavings) }}, 
             you'll reach Coast FIRE at age {{ store.coastFIREAge }}.
+          </p>
+          <p v-if="store.inflationRate > 0" class="calculation-note">
+            {{ store.useRealReturns ? 
+              `Using inflation-adjusted returns (${store.realReturnRate.toFixed(2)}% real = ${store.expectedReturnRate}% nominal - ${store.inflationRate}% inflation)` : 
+              `Using nominal returns with target adjusted for ${store.inflationRate}% annual inflation` 
+            }}
+          </p>
+          <p v-else class="calculation-note">
+            Inflation disabled (using {{ store.expectedReturnRate }}% returns without adjustment)
           </p>
           <p v-if="store.monthlyExpenses > 0 || store.yearlyExpenses > 0" class="calculation-note">
             Based on {{ formatCurrency(store.monthlyExpenses) }}/month ({{ formatCurrency(store.yearlyExpenses) }}/year) and 
@@ -426,6 +480,32 @@ button {
 
 .form-group.half-width {
   margin-bottom: 0;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: auto;
+  margin-right: 0.5rem;
+  margin-top: 0.2rem;
+}
+
+.checkbox-label span {
+  flex: 1;
+}
+
+.info-text {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: #f0f9ff;
+  border-left: 3px solid #409eff;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  color: #666;
 }
 
 @media (max-width: 768px) {

@@ -32,7 +32,10 @@ src/
   - currentAge, retirementAge, currentSavings, expectedReturnRate
   - targetRetirementAmount (total amount needed)
   - monthlyExpenses (desired monthly spending in retirement)
+  - yearlyExpenses (desired yearly spending in retirement)
   - withdrawalRate (safe withdrawal rate, default 4%)
+  - inflationRate (expected inflation rate, default 3%)
+  - useRealReturns (toggle: true for inflation-adjusted returns, false for nominal)
 - Computeds: 
   - `futureValueOfCurrentSavings`: Projection at retirement age
   - `isCoastFIREReady`: Boolean if current savings sufficient
@@ -44,10 +47,15 @@ src/
 
 **Calculations**:
 ```typescript
+// Basic compound interest
 FV = PV * (1 + r)^n  // Future value
 PV = FV / (1 + r)^n  // Present value needed
 
-// New calculations for expense-based planning:
+// Inflation adjustment
+realReturnRate = (1 + nominalReturn) / (1 + inflation) - 1  // Fisher equation
+inflationAdjustedTarget = targetAmount * (1 + inflation)^yearsToRetirement  // Future value in today's dollars
+
+// Expense-based planning:
 targetAmount = (monthlyExpenses * 12) / (withdrawalRate / 100)
 monthlyExpenses = (targetAmount * withdrawalRate / 100) / 12
 ```
