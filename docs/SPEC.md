@@ -248,6 +248,107 @@ Error display via computed `errors` object in stores.
 - Lazy loading for charts (planned)
 - Max 100 data points per series (planned)
 
+## Math Library Architecture
+
+### Purpose
+Extract all pure mathematical logic from Vue stores into a stateless functional library that can be thoroughly unit tested. This separation improves:
+- **Testability**: Pure functions with predictable inputs/outputs
+- **Reusability**: Math functions can be used across multiple components
+- **Maintainability**: Clear separation between business logic and UI state
+- **Reliability**: Comprehensive unit test coverage of core calculations
+
+### Structure
+```
+src/utils/math/
+├── coastFire.ts          # Coast FIRE calculations
+├── mortgage.ts           # Mortgage amortization & investment calculations  
+├── compound.ts           # Compound interest utilities
+├── validation.ts         # Input validation functions
+├── charts.ts            # Chart data generation utilities
+└── index.ts             # Barrel export for clean imports
+```
+
+### Design Principles
+1. **Pure Functions**: No side effects, deterministic outputs
+2. **Single Responsibility**: Each function has one clear purpose
+3. **Input Validation**: Functions handle edge cases gracefully
+4. **Type Safety**: Strong TypeScript interfaces for all parameters
+5. **Documentation**: JSDoc comments explaining formulas and usage
+6. **Test Coverage**: Each function has comprehensive unit tests
+
+### API Design
+
+**Coast FIRE Functions:**
+```typescript
+// Core compound interest calculations
+export function calculateFutureValue(principal: number, rate: number, years: number): number
+export function calculatePresentValue(futureValue: number, rate: number, years: number): number
+export function calculateTimeToTarget(principal: number, target: number, rate: number): number
+
+// Coast FIRE specific calculations  
+export function calculateCoastFireNumber(target: number, rate: number, years: number): number
+export function calculateAdditionalSavingsNeeded(current: number, target: number, rate: number, years: number): number
+export function isCoastFireReady(current: number, target: number, rate: number, years: number): boolean
+
+// Fisher equation for inflation adjustment
+export function calculateRealReturnRate(nominalRate: number, inflationRate: number): number
+export function adjustTargetForInflation(target: number, inflationRate: number, years: number): number
+
+// Expense-based calculations
+export function calculateTargetFromExpenses(annualExpenses: number, withdrawalRate: number): number
+export function calculateExpensesFromTarget(target: number, withdrawalRate: number): number
+```
+
+**Mortgage Functions:**
+```typescript
+// Basic mortgage calculations
+export function calculateMonthlyRate(annualRate: number): number
+export function calculatePayoffTime(principal: number, monthlyPayment: number, rate: number, lumpSum?: number): number
+export function calculateTotalInterest(principal: number, monthlyPayment: number, rate: number, lumpSum?: number): number
+
+// Investment comparison
+export function calculateInvestmentValue(lumpSum: number, monthlyAmount: number, rate: number, months: number): number
+export function calculateAfterTaxReturn(grossReturn: number, taxRate: number, totalInvested: number): number
+export function determineBetterStrategy(interestSaved: number, investmentNetBenefit: number): 'payoff' | 'invest'
+
+// Amortization schedule generation
+export interface PaymentDetail {
+  month: number;
+  balance: number;
+  interestPayment: number;
+  principalPayment: number;
+}
+export function generateAmortizationSchedule(principal: number, rate: number, payment: number): PaymentDetail[]
+```
+
+**Chart Data Functions:**
+```typescript
+export function generateProjectionChartData(currentSavings: number, rate: number, years: number, target: number): ChartData
+export function generateBalanceChartData(principal: number, basePayment: number, extraPayment: number, rate: number): ChartData
+export function generateInterestComparisonData(principal: number, basePayment: number, extraPayment: number, rate: number): ChartData
+```
+
+**Validation Functions:**
+```typescript
+export function validateCoastFireInputs(inputs: CoastFireInputs): ValidationResult
+export function validateMortgageInputs(inputs: MortgageInputs): ValidationResult
+export function validateNumericRange(value: number, min: number, max: number, fieldName: string): string | null
+```
+
+### Migration Strategy
+1. Create math library with comprehensive tests
+2. Update stores to use math functions instead of inline calculations
+3. Ensure all existing tests continue to pass
+4. Add additional tests for edge cases now that math is isolated
+5. Refactor tooltip calculations to use math library functions
+
+### Benefits After Implementation
+- **Reduced Store Complexity**: Stores focus on state management, not calculations
+- **Improved Test Coverage**: Math logic tested in isolation with better edge case coverage
+- **Better Performance**: Pure functions can be memoized if needed
+- **Enhanced Reliability**: Mathematical formulas centralized and thoroughly validated
+- **Future Extensibility**: Easy to add new calculators using existing math functions
+
 ## Future Enhancements
 - Chart zoom/pan interactions
 - CSV/PNG export functionality

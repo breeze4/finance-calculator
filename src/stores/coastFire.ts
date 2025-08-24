@@ -1,5 +1,21 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import {
+  calculateYearsToRetirement,
+  calculateRealReturnRate,
+  calculateFutureValue,
+  adjustTargetForInflation,
+  isCoastFireReady,
+  calculateAdditionalSavingsNeeded,
+  calculateCoastFireAge,
+  calculateCoastFireNumber,
+  calculateTargetFromMonthlyExpenses,
+  calculateExpensesFromTarget,
+  generateCoastFireProjectionChart,
+  generateRequiredSavingsByAgeChart,
+  validateCoastFireInputs,
+  type CoastFireInputs
+} from '../utils/math'
 
 export const useCoastFireStore = defineStore('coastFire', () => {
   const currentAge = ref(30)
@@ -27,6 +43,21 @@ export const useCoastFireStore = defineStore('coastFire', () => {
   })
   
   const validateInputs = () => {
+    const inputs: CoastFireInputs = {
+      currentAge: currentAge.value,
+      retirementAge: retirementAge.value,
+      currentSavings: currentSavings.value,
+      expectedReturnRate: expectedReturnRate.value,
+      targetRetirementAmount: targetRetirementAmount.value,
+      monthlyExpenses: monthlyExpenses.value,
+      yearlyExpenses: yearlyExpenses.value,
+      withdrawalRate: withdrawalRate.value,
+      inflationRate: inflationRate.value
+    }
+    
+    const validation = validateCoastFireInputs(inputs)
+    
+    // Initialize empty errors first
     errors.value = {
       currentAge: '',
       retirementAge: '',
@@ -39,59 +70,14 @@ export const useCoastFireStore = defineStore('coastFire', () => {
       inflationRate: ''
     }
     
-    let isValid = true
+    // Then populate with actual errors
+    Object.keys(validation.errors).forEach(key => {
+      if ((errors.value as any)[key] !== undefined) {
+        (errors.value as any)[key] = validation.errors[key] || ''
+      }
+    })
     
-    if (currentAge.value < 18 || currentAge.value > 100) {
-      errors.value.currentAge = 'Age must be between 18 and 100'
-      isValid = false
-    }
-    
-    if (retirementAge.value < currentAge.value) {
-      errors.value.retirementAge = 'Retirement age must be greater than current age'
-      isValid = false
-    }
-    
-    if (retirementAge.value > 100) {
-      errors.value.retirementAge = 'Retirement age must be 100 or less'
-      isValid = false
-    }
-    
-    if (currentSavings.value < 0) {
-      errors.value.currentSavings = 'Savings cannot be negative'
-      isValid = false
-    }
-    
-    if (expectedReturnRate.value < 0 || expectedReturnRate.value > 30) {
-      errors.value.expectedReturnRate = 'Return rate must be between 0% and 30%'
-      isValid = false
-    }
-    
-    if (targetRetirementAmount.value <= 0) {
-      errors.value.targetRetirementAmount = 'Target amount must be greater than 0'
-      isValid = false
-    }
-    
-    if (monthlyExpenses.value < 0) {
-      errors.value.monthlyExpenses = 'Monthly expenses cannot be negative'
-      isValid = false
-    }
-    
-    if (yearlyExpenses.value < 0) {
-      errors.value.yearlyExpenses = 'Yearly expenses cannot be negative'
-      isValid = false
-    }
-    
-    if (withdrawalRate.value < 2 || withdrawalRate.value > 8) {
-      errors.value.withdrawalRate = 'Withdrawal rate should be between 2% and 8%'
-      isValid = false
-    }
-    
-    if (inflationRate.value < 0 || inflationRate.value > 10) {
-      errors.value.inflationRate = 'Inflation rate should be between 0% and 10%'
-      isValid = false
-    }
-    
-    return isValid
+    return validation.isValid
   }
   
   const resetToDefaults = () => {
@@ -121,19 +107,15 @@ export const useCoastFireStore = defineStore('coastFire', () => {
   }
   
   const yearsToRetirement = computed(() => {
-    return Math.max(0, retirementAge.value - currentAge.value)
+    return calculateYearsToRetirement(currentAge.value, retirementAge.value)
   })
   
   // Calculate the real (inflation-adjusted) return rate using Fisher equation
   const realReturnRate = computed(() => {
     if (!useRealReturns.value) return expectedReturnRate.value
     
-    const nominal = expectedReturnRate.value / 100
-    const inflation = inflationRate.value / 100
-    
-    // Fisher equation: realReturn = (1 + nominal) / (1 + inflation) - 1
-    const real = ((1 + nominal) / (1 + inflation)) - 1
-    return real * 100 // Convert back to percentage
+    const realRate = calculateRealReturnRate(expectedReturnRate.value / 100, inflationRate.value / 100)
+    return realRate * 100 // Convert back to percentage
   })
   
   // The effective rate to use in calculations (real or nominal based on setting)
@@ -144,7 +126,7 @@ export const useCoastFireStore = defineStore('coastFire', () => {
   const futureValueOfCurrentSavings = computed(() => {
     const rate = effectiveReturnRate.value / 100
     const years = yearsToRetirement.value
-    return currentSavings.value * Math.pow(1 + rate, years)
+    return calculateFutureValue(currentSavings.value, rate, years)
   })
   
   // If using nominal returns, we need to adjust the target for inflation
@@ -154,23 +136,22 @@ export const useCoastFireStore = defineStore('coastFire', () => {
       return activeTargetAmount.value
     } else {
       // When using nominal returns, adjust target for inflation
-      const inflationMultiplier = Math.pow(1 + inflationRate.value / 100, yearsToRetirement.value)
-      return activeTargetAmount.value * inflationMultiplier
+      return adjustTargetForInflation(activeTargetAmount.value, inflationRate.value / 100, yearsToRetirement.value)
     }
   })
   
   const isCoastFIREReady = computed(() => {
-    return futureValueOfCurrentSavings.value >= inflationAdjustedTarget.value
-  })
-  
-  const additionalSavingsNeeded = computed(() => {
-    if (isCoastFIREReady.value) return 0
     const rate = effectiveReturnRate.value / 100
     const years = yearsToRetirement.value
     const target = inflationAdjustedTarget.value
-    if (years === 0) return target - currentSavings.value
-    const presentValue = target / Math.pow(1 + rate, years)
-    return Math.max(0, presentValue - currentSavings.value)
+    return isCoastFireReady(currentSavings.value, target, rate, years)
+  })
+  
+  const additionalSavingsNeeded = computed(() => {
+    const rate = effectiveReturnRate.value / 100
+    const years = yearsToRetirement.value
+    const target = inflationAdjustedTarget.value
+    return calculateAdditionalSavingsNeeded(currentSavings.value, target, rate, years)
   })
   
   const coastFIREAge = computed(() => {
@@ -178,8 +159,20 @@ export const useCoastFireStore = defineStore('coastFire', () => {
     
     const rate = effectiveReturnRate.value / 100
     const target = inflationAdjustedTarget.value
-    const yearsNeeded = Math.log(target / currentSavings.value) / Math.log(1 + rate)
-    return Math.ceil(currentAge.value + yearsNeeded)
+    
+    // Handle edge cases that math library might not handle
+    if (currentSavings.value <= 0) {
+      // If no savings, can't calculate age - return a reasonable default
+      return currentAge.value + 100 // Essentially "never" ready
+    }
+    
+    try {
+      return calculateCoastFireAge(currentSavings.value, target, rate, currentAge.value)
+    } catch (error) {
+      // Fallback to old logic if math library fails
+      const yearsNeeded = Math.log(target / currentSavings.value) / Math.log(1 + rate)
+      return Math.ceil(currentAge.value + yearsNeeded)
+    }
   })
   
   // Coast FIRE number: the amount you need saved right now to coast to retirement
@@ -187,67 +180,28 @@ export const useCoastFireStore = defineStore('coastFire', () => {
     const rate = effectiveReturnRate.value / 100
     const years = yearsToRetirement.value
     const target = inflationAdjustedTarget.value
-    
-    if (years === 0) {
-      // If retiring this year, need the full target amount
-      return target
-    }
-    
-    // Present value calculation: how much do you need today for it to grow to the target
-    // PV = FV / (1 + r)^t
-    return target / Math.pow(1 + rate, years)
+    return calculateCoastFireNumber(target, rate, years)
   })
   
   const projectionChartData = computed(() => {
-    const ages: number[] = []
-    const projectedValues: number[] = []
-    const targetValues: number[] = []
-    
     const rate = effectiveReturnRate.value / 100
-    const years = yearsToRetirement.value
+    const target = activeTargetAmount.value
+    const inflationRate_decimal = inflationRate.value / 100
     
-    // Generate data points for each year from current age to retirement
-    for (let i = 0; i <= years; i++) {
-      const age = currentAge.value + i
-      ages.push(age)
-      
-      // Calculate projected value at this age
-      const projectedValue = currentSavings.value * Math.pow(1 + rate, i)
-      projectedValues.push(projectedValue)
-      
-      // Target value adjusts for inflation if using nominal returns
-      const inflationMultiplier = useRealReturns.value ? 1 : Math.pow(1 + inflationRate.value / 100, i)
-      targetValues.push(activeTargetAmount.value * inflationMultiplier)
-    }
-    
-    return {
-      labels: ages.map(age => `Age ${age}`),
-      datasets: [
-        {
-          label: 'Projected Savings',
-          data: projectedValues,
-          borderColor: '#409eff',
-          backgroundColor: '#409eff33',
-          fill: true,
-          tension: 0.4
-        },
-        {
-          label: 'Target Amount',
-          data: targetValues,
-          borderColor: '#e74c3c',
-          backgroundColor: 'transparent',
-          borderDash: [5, 5],
-          fill: false,
-          pointRadius: 0
-        }
-      ]
-    }
+    return generateCoastFireProjectionChart(
+      currentSavings.value,
+      currentAge.value,
+      retirementAge.value,
+      rate,
+      target,
+      inflationRate_decimal,
+      useRealReturns.value
+    )
   })
   
   const targetFromMonthlyExpenses = computed(() => {
     if (monthlyExpenses.value <= 0 || withdrawalRate.value <= 0) return 0
-    // Round to nearest dollar (no cents)
-    return Math.round((monthlyExpenses.value * 12) / (withdrawalRate.value / 100))
+    return Math.round(calculateTargetFromMonthlyExpenses(monthlyExpenses.value, withdrawalRate.value / 100))
   })
   
   const targetFromYearlyExpenses = computed(() => {
@@ -258,7 +212,7 @@ export const useCoastFireStore = defineStore('coastFire', () => {
   
   const monthlyFromTarget = computed(() => {
     if (targetRetirementAmount.value <= 0 || withdrawalRate.value <= 0) return 0
-    return (targetRetirementAmount.value * (withdrawalRate.value / 100)) / 12
+    return calculateExpensesFromTarget(targetRetirementAmount.value, withdrawalRate.value / 100) / 12
   })
   
   const activeTargetAmount = computed(() => {
@@ -305,40 +259,17 @@ export const useCoastFireStore = defineStore('coastFire', () => {
   }
   
   const requiredSavingsByAge = computed(() => {
-    const ages: number[] = []
-    const requiredSavings: number[] = []
-    
     const rate = effectiveReturnRate.value / 100
+    const target = activeTargetAmount.value
+    const inflationRate_decimal = inflationRate.value / 100
     
-    // Calculate required savings for ages from 20 to 50
-    for (let age = 20; age <= 50; age += 5) {
-      ages.push(age)
-      
-      const yearsToRetire = retirementAge.value - age
-      if (yearsToRetire > 0) {
-        // Calculate the inflation-adjusted target for this specific age
-        const inflationMultiplier = useRealReturns.value ? 1 : Math.pow(1 + inflationRate.value / 100, yearsToRetire)
-        const adjustedTarget = activeTargetAmount.value * inflationMultiplier
-        const presentValue = adjustedTarget / Math.pow(1 + rate, yearsToRetire)
-        requiredSavings.push(presentValue)
-      } else {
-        requiredSavings.push(activeTargetAmount.value)
-      }
-    }
-    
-    return {
-      labels: ages.map(age => `Age ${age}`),
-      datasets: [
-        {
-          label: 'Required Savings to Coast',
-          data: requiredSavings,
-          borderColor: '#27ae60',
-          backgroundColor: '#27ae6033',
-          fill: true,
-          tension: 0.4
-        }
-      ]
-    }
+    return generateRequiredSavingsByAgeChart(
+      target,
+      retirementAge.value,
+      rate,
+      inflationRate_decimal,
+      useRealReturns.value
+    )
   })
   
   // Tooltip data for mathematical explanations
