@@ -814,6 +814,250 @@ describe('Coast FIRE Calculator', () => {
     })
   })
 
+  describe('yearly expenses field and three-way synchronization', () => {
+    it('calculates target from yearly expenses correctly', () => {
+      const store = useCoastFireStore()
+      
+      store.yearlyExpenses = 48000
+      store.withdrawalRate = 4
+      
+      // $48,000 / 4% = $1,200,000
+      expect(store.targetFromYearlyExpenses).toBe(1200000)
+    })
+
+    it('handles zero values in yearly expense calculations', () => {
+      const store = useCoastFireStore()
+      
+      store.yearlyExpenses = 0
+      store.withdrawalRate = 4
+      expect(store.targetFromYearlyExpenses).toBe(0)
+
+      store.yearlyExpenses = 60000
+      store.withdrawalRate = 0
+      expect(store.targetFromYearlyExpenses).toBe(0)
+    })
+
+    it('syncs from yearly expenses to monthly and target', () => {
+      const store = useCoastFireStore()
+      
+      store.withdrawalRate = 4
+      store.yearlyExpenses = 60000
+      store.syncFromYearlyExpenses()
+      
+      expect(store.lastEditedField).toBe('yearly')
+      expect(store.targetRetirementAmount).toBe(1500000) // $60,000 / 0.04
+      expect(store.monthlyExpenses).toBe(5000) // $60,000 / 12
+    })
+
+    it('syncs from monthly expenses to yearly and target', () => {
+      const store = useCoastFireStore()
+      
+      store.withdrawalRate = 4
+      store.monthlyExpenses = 4000
+      store.syncFromMonthlyExpenses()
+      
+      expect(store.lastEditedField).toBe('monthly')
+      expect(store.targetRetirementAmount).toBe(1200000) // $4,000 * 12 / 0.04
+      expect(store.yearlyExpenses).toBe(48000) // $4,000 * 12
+    })
+
+    it('syncs from target amount to monthly and yearly', () => {
+      const store = useCoastFireStore()
+      
+      store.withdrawalRate = 4
+      store.targetRetirementAmount = 2000000
+      store.syncFromTargetAmount()
+      
+      expect(store.lastEditedField).toBe('target')
+      expect(store.monthlyExpenses).toBe(6667) // $2M * 0.04 / 12, rounded
+      expect(store.yearlyExpenses).toBe(80004) // $6667 * 12
+    })
+
+    it('rounds values correctly when syncing between fields', () => {
+      const store = useCoastFireStore()
+      
+      store.withdrawalRate = 3.5
+      
+      // Test yearly to monthly rounding
+      store.yearlyExpenses = 50000
+      store.syncFromYearlyExpenses()
+      expect(store.monthlyExpenses).toBe(4167) // $50,000 / 12 = 4166.67, rounded to 4167
+      
+      // Test monthly to yearly (should be exact)
+      store.monthlyExpenses = 3333
+      store.syncFromMonthlyExpenses()
+      expect(store.yearlyExpenses).toBe(39996) // $3333 * 12
+      
+      // Test target to monthly/yearly rounding
+      store.targetRetirementAmount = 1234567
+      store.syncFromTargetAmount()
+      // $1,234,567 * 3.5% = $43,209.845
+      // Monthly: $43,209.845 / 12 = $3600.82, rounded to 3601
+      expect(store.monthlyExpenses).toBe(3601)
+      // Yearly: $3601 * 12 = $43,212
+      expect(store.yearlyExpenses).toBe(43212)
+    })
+
+    it('activeTargetAmount uses correct value based on last edited field', () => {
+      const store = useCoastFireStore()
+      
+      store.targetRetirementAmount = 1000000
+      store.monthlyExpenses = 4000
+      store.yearlyExpenses = 60000
+      store.withdrawalRate = 4
+      
+      // When target was last edited
+      store.lastEditedField = 'target'
+      expect(store.activeTargetAmount).toBe(1000000)
+
+      // When monthly was last edited
+      store.lastEditedField = 'monthly'
+      expect(store.activeTargetAmount).toBe(1200000) // $4000 * 12 / 0.04
+
+      // When yearly was last edited
+      store.lastEditedField = 'yearly'
+      expect(store.activeTargetAmount).toBe(1500000) // $60000 / 0.04
+    })
+
+    it('handles clearing expenses fields to zero', () => {
+      const store = useCoastFireStore()
+      
+      store.withdrawalRate = 4
+      
+      // Set initial values
+      store.yearlyExpenses = 60000
+      store.syncFromYearlyExpenses()
+      expect(store.targetRetirementAmount).toBe(1500000)
+      expect(store.monthlyExpenses).toBe(5000)
+      
+      // Clear yearly to zero
+      store.yearlyExpenses = 0
+      store.syncFromYearlyExpenses()
+      expect(store.targetRetirementAmount).toBe(0)
+      expect(store.monthlyExpenses).toBe(0)
+      
+      // Set values again via monthly
+      store.monthlyExpenses = 3000
+      store.syncFromMonthlyExpenses()
+      expect(store.targetRetirementAmount).toBe(900000)
+      expect(store.yearlyExpenses).toBe(36000)
+      
+      // Clear monthly to zero
+      store.monthlyExpenses = 0
+      store.syncFromMonthlyExpenses()
+      expect(store.targetRetirementAmount).toBe(0)
+      expect(store.yearlyExpenses).toBe(0)
+    })
+
+    it('validates yearly expenses not negative', () => {
+      const store = useCoastFireStore()
+      
+      store.yearlyExpenses = -1000
+      store.validateInputs()
+      expect(store.errors.yearlyExpenses).toContain('cannot be negative')
+
+      store.yearlyExpenses = 0
+      store.validateInputs()
+      expect(store.errors.yearlyExpenses).toBe('')
+
+      store.yearlyExpenses = 50000
+      store.validateInputs()
+      expect(store.errors.yearlyExpenses).toBe('')
+    })
+
+    it('resetToDefaults includes yearly expenses', () => {
+      const store = useCoastFireStore()
+      
+      // Change from defaults
+      store.yearlyExpenses = 72000
+      store.monthlyExpenses = 6000
+      store.lastEditedField = 'yearly'
+      
+      // Reset
+      store.resetToDefaults()
+      
+      expect(store.yearlyExpenses).toBe(0)
+      expect(store.monthlyExpenses).toBe(0)
+      expect(store.lastEditedField).toBe('target')
+    })
+
+    it('three-way sync maintains consistency', () => {
+      const store = useCoastFireStore()
+      
+      store.withdrawalRate = 4
+      
+      // Start with target
+      store.targetRetirementAmount = 1000000
+      store.syncFromTargetAmount()
+      
+      const monthlyFromTarget = store.monthlyExpenses
+      const yearlyFromTarget = store.yearlyExpenses
+      
+      // Sync from monthly should maintain relationships
+      store.syncFromMonthlyExpenses()
+      expect(store.targetRetirementAmount).toBe(Math.round((monthlyFromTarget * 12) / 0.04))
+      expect(store.yearlyExpenses).toBe(monthlyFromTarget * 12)
+      
+      // Sync from yearly should maintain relationships
+      store.yearlyExpenses = 48000
+      store.syncFromYearlyExpenses()
+      expect(store.targetRetirementAmount).toBe(1200000) // $48000 / 0.04
+      expect(store.monthlyExpenses).toBe(4000) // $48000 / 12
+      
+      // All three fields should be in sync
+      expect(store.monthlyExpenses * 12).toBe(store.yearlyExpenses)
+      expect(store.yearlyExpenses / 0.04).toBe(store.targetRetirementAmount)
+    })
+
+    it('handles withdrawal rate changes correctly', () => {
+      const store = useCoastFireStore()
+      
+      // Set initial values
+      store.monthlyExpenses = 5000
+      store.withdrawalRate = 4
+      store.syncFromMonthlyExpenses()
+      
+      expect(store.targetRetirementAmount).toBe(1500000)
+      expect(store.yearlyExpenses).toBe(60000)
+      
+      // Change withdrawal rate and re-sync
+      store.withdrawalRate = 3
+      store.syncFromMonthlyExpenses()
+      
+      expect(store.targetRetirementAmount).toBe(2000000) // $5000 * 12 / 0.03
+      expect(store.yearlyExpenses).toBe(60000) // Should stay the same
+    })
+
+    it('integration test: calculations use correct active target', () => {
+      const store = useCoastFireStore()
+      
+      store.currentAge = 30
+      store.retirementAge = 65
+      store.currentSavings = 100000
+      store.expectedReturnRate = 7
+      store.withdrawalRate = 4
+      
+      // Test with yearly expenses as source
+      store.yearlyExpenses = 50000
+      store.syncFromYearlyExpenses()
+      
+      const targetFromYearly = store.targetFromYearlyExpenses
+      expect(store.activeTargetAmount).toBe(targetFromYearly)
+      
+      // Coast FIRE calculations should use the active target
+      const futureValue = store.futureValueOfCurrentSavings
+      expect(store.isCoastFIREReady).toBe(futureValue >= targetFromYearly)
+      
+      // Switch to monthly as source
+      store.monthlyExpenses = 3000
+      store.syncFromMonthlyExpenses()
+      
+      const targetFromMonthly = store.targetFromMonthlyExpenses
+      expect(store.activeTargetAmount).toBe(targetFromMonthly)
+      expect(store.isCoastFIREReady).toBe(futureValue >= targetFromMonthly)
+    })
+  })
+
   describe('validation for new fields', () => {
     it('validates withdrawal rate range', () => {
       const store = useCoastFireStore()

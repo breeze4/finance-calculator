@@ -8,8 +8,9 @@ export const useCoastFireStore = defineStore('coastFire', () => {
   const expectedReturnRate = ref(7)
   const targetRetirementAmount = ref(1000000)
   const monthlyExpenses = ref(0)
+  const yearlyExpenses = ref(0)
   const withdrawalRate = ref(4)
-  const lastEditedField = ref<'target' | 'monthly'>('target')
+  const lastEditedField = ref<'target' | 'monthly' | 'yearly'>('target')
   
   const errors = ref({
     currentAge: '',
@@ -18,6 +19,7 @@ export const useCoastFireStore = defineStore('coastFire', () => {
     expectedReturnRate: '',
     targetRetirementAmount: '',
     monthlyExpenses: '',
+    yearlyExpenses: '',
     withdrawalRate: ''
   })
   
@@ -29,6 +31,7 @@ export const useCoastFireStore = defineStore('coastFire', () => {
       expectedReturnRate: '',
       targetRetirementAmount: '',
       monthlyExpenses: '',
+      yearlyExpenses: '',
       withdrawalRate: ''
     }
     
@@ -69,6 +72,11 @@ export const useCoastFireStore = defineStore('coastFire', () => {
       isValid = false
     }
     
+    if (yearlyExpenses.value < 0) {
+      errors.value.yearlyExpenses = 'Yearly expenses cannot be negative'
+      isValid = false
+    }
+    
     if (withdrawalRate.value < 2 || withdrawalRate.value > 8) {
       errors.value.withdrawalRate = 'Withdrawal rate should be between 2% and 8%'
       isValid = false
@@ -84,6 +92,7 @@ export const useCoastFireStore = defineStore('coastFire', () => {
     expectedReturnRate.value = 7
     targetRetirementAmount.value = 1000000
     monthlyExpenses.value = 0
+    yearlyExpenses.value = 0
     withdrawalRate.value = 4
     lastEditedField.value = 'target'
     // Clear validation errors
@@ -94,6 +103,7 @@ export const useCoastFireStore = defineStore('coastFire', () => {
       expectedReturnRate: '',
       targetRetirementAmount: '',
       monthlyExpenses: '',
+      yearlyExpenses: '',
       withdrawalRate: ''
     }
   }
@@ -182,6 +192,12 @@ export const useCoastFireStore = defineStore('coastFire', () => {
     return Math.round((monthlyExpenses.value * 12) / (withdrawalRate.value / 100))
   })
   
+  const targetFromYearlyExpenses = computed(() => {
+    if (yearlyExpenses.value <= 0 || withdrawalRate.value <= 0) return 0
+    // Round to nearest dollar (no cents)
+    return Math.round(yearlyExpenses.value / (withdrawalRate.value / 100))
+  })
+  
   const monthlyFromTarget = computed(() => {
     if (targetRetirementAmount.value <= 0 || withdrawalRate.value <= 0) return 0
     return (targetRetirementAmount.value * (withdrawalRate.value / 100)) / 12
@@ -190,6 +206,9 @@ export const useCoastFireStore = defineStore('coastFire', () => {
   const activeTargetAmount = computed(() => {
     if (lastEditedField.value === 'monthly' && monthlyExpenses.value > 0) {
       return targetFromMonthlyExpenses.value
+    }
+    if (lastEditedField.value === 'yearly' && yearlyExpenses.value > 0) {
+      return targetFromYearlyExpenses.value
     }
     return targetRetirementAmount.value
   })
@@ -200,6 +219,19 @@ export const useCoastFireStore = defineStore('coastFire', () => {
     if (withdrawalRate.value > 0) {
       // Round to nearest dollar (no cents)
       targetRetirementAmount.value = Math.round(targetFromMonthlyExpenses.value)
+      // Also update yearly expenses
+      yearlyExpenses.value = Math.round(monthlyExpenses.value * 12)
+    }
+  }
+  
+  const syncFromYearlyExpenses = () => {
+    lastEditedField.value = 'yearly'
+    // Always sync the values, even when 0
+    if (withdrawalRate.value > 0) {
+      // Round to nearest dollar (no cents)
+      targetRetirementAmount.value = Math.round(targetFromYearlyExpenses.value)
+      // Also update monthly expenses
+      monthlyExpenses.value = Math.round(yearlyExpenses.value / 12)
     }
   }
   
@@ -209,6 +241,8 @@ export const useCoastFireStore = defineStore('coastFire', () => {
     if (withdrawalRate.value > 0) {
       // Round to nearest dollar (no cents)
       monthlyExpenses.value = Math.round(monthlyFromTarget.value)
+      // Also update yearly expenses
+      yearlyExpenses.value = Math.round(monthlyExpenses.value * 12)
     }
   }
   
@@ -253,6 +287,7 @@ export const useCoastFireStore = defineStore('coastFire', () => {
     expectedReturnRate,
     targetRetirementAmount,
     monthlyExpenses,
+    yearlyExpenses,
     withdrawalRate,
     lastEditedField,
     errors,
@@ -265,9 +300,11 @@ export const useCoastFireStore = defineStore('coastFire', () => {
     projectionChartData,
     requiredSavingsByAge,
     targetFromMonthlyExpenses,
+    targetFromYearlyExpenses,
     monthlyFromTarget,
     activeTargetAmount,
     syncFromMonthlyExpenses,
+    syncFromYearlyExpenses,
     syncFromTargetAmount,
     resetToDefaults
   }

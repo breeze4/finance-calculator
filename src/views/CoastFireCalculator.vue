@@ -15,7 +15,8 @@ const handleReset = () => {
 }
 
 watch([() => store.currentAge, () => store.retirementAge, () => store.currentSavings, 
-       () => store.expectedReturnRate, () => store.targetRetirementAmount], () => {
+       () => store.expectedReturnRate, () => store.targetRetirementAmount, 
+       () => store.monthlyExpenses, () => store.yearlyExpenses], () => {
   store.validateInputs()
 })
 
@@ -109,7 +110,7 @@ const formatPercent = (value: number) => {
         <div class="form-group">
           <label for="target-amount">
             Target Retirement Amount
-            <span class="help-icon" title="Total amount you want saved by retirement (automatically calculated if you enter monthly expenses)">?</span>
+            <span class="help-icon" title="Total amount you want saved by retirement (automatically calculated if you enter expenses)">?</span>
           </label>
           <input 
             id="target-amount"
@@ -123,21 +124,40 @@ const formatPercent = (value: number) => {
           <span v-if="store.errors.targetRetirementAmount" class="error-message">{{ store.errors.targetRetirementAmount }}</span>
         </div>
         
-        <div class="form-group">
-          <label for="monthly-expenses">
-            Monthly Expenses in Retirement
-            <span class="help-icon" title="How much you want to spend per month in retirement (leave 0 to use target amount)">?</span>
-          </label>
-          <input 
-            id="monthly-expenses"
-            type="number" 
-            v-model.number="store.monthlyExpenses"
-            min="0"
-            step="100"
-            :class="{ 'error': store.errors.monthlyExpenses }"
-            @input="store.syncFromMonthlyExpenses"
-          />
-          <span v-if="store.errors.monthlyExpenses" class="error-message">{{ store.errors.monthlyExpenses }}</span>
+        <div class="expenses-row">
+          <div class="form-group half-width">
+            <label for="monthly-expenses">
+              Monthly Expenses
+              <span class="help-icon" title="Monthly spending in retirement">?</span>
+            </label>
+            <input 
+              id="monthly-expenses"
+              type="number" 
+              v-model.number="store.monthlyExpenses"
+              min="0"
+              step="100"
+              :class="{ 'error': store.errors.monthlyExpenses }"
+              @input="store.syncFromMonthlyExpenses"
+            />
+            <span v-if="store.errors.monthlyExpenses" class="error-message">{{ store.errors.monthlyExpenses }}</span>
+          </div>
+          
+          <div class="form-group half-width">
+            <label for="yearly-expenses">
+              Yearly Expenses
+              <span class="help-icon" title="Annual spending in retirement">?</span>
+            </label>
+            <input 
+              id="yearly-expenses"
+              type="number" 
+              v-model.number="store.yearlyExpenses"
+              min="0"
+              step="1000"
+              :class="{ 'error': store.errors.yearlyExpenses }"
+              @input="store.syncFromYearlyExpenses"
+            />
+            <span v-if="store.errors.yearlyExpenses" class="error-message">{{ store.errors.yearlyExpenses }}</span>
+          </div>
         </div>
         
         <div class="form-group">
@@ -218,9 +238,9 @@ const formatPercent = (value: number) => {
             more in savings. With your current savings of {{ formatCurrency(store.currentSavings) }}, 
             you'll reach Coast FIRE at age {{ store.coastFIREAge }}.
           </p>
-          <p v-if="store.monthlyExpenses > 0" class="calculation-note">
-            Based on {{ formatCurrency(store.monthlyExpenses) }}/month expenses and 
-            {{ store.withdrawalRate }}% withdrawal rate ({{ formatCurrency(store.monthlyExpenses * 12) }}/year).
+          <p v-if="store.monthlyExpenses > 0 || store.yearlyExpenses > 0" class="calculation-note">
+            Based on {{ formatCurrency(store.monthlyExpenses) }}/month ({{ formatCurrency(store.yearlyExpenses) }}/year) and 
+            {{ store.withdrawalRate }}% withdrawal rate.
           </p>
         </div>
       </div>
@@ -398,7 +418,24 @@ button {
   to { opacity: 1; transform: translateY(0); }
 }
 
+.expenses-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.form-group.half-width {
+  margin-bottom: 0;
+}
+
 @media (max-width: 768px) {
+  .expenses-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .form-group.half-width {
+    margin-bottom: 1.5rem;
+  }
   .page-container {
     padding: 1rem;
   }
