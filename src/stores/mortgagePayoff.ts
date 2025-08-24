@@ -132,6 +132,18 @@ export const useMortgagePayoffStore = defineStore('mortgagePayoff', () => {
     return determineBetterStrategy(interestSaved.value, investmentNetBenefit)
   })
   
+  const totalMonthlyContributions = computed(() => {
+    return additionalMonthlyPayment.value * acceleratedPayoffMonths.value
+  })
+  
+  const totalLumpSumContributions = computed(() => {
+    return lumpSumPayment.value
+  })
+  
+  const totalAllContributions = computed(() => {
+    return totalMonthlyContributions.value + totalLumpSumContributions.value
+  })
+  
   const balanceChartData = computed(() => {
     return generateMortgageBalanceChart(
       principal.value,
@@ -166,6 +178,202 @@ export const useMortgagePayoffStore = defineStore('mortgagePayoff', () => {
     )
   })
   
+  // Tooltip data for mathematical explanations
+  const tooltipData = computed(() => ({
+    monthlyInterestRate: {
+      title: 'Monthly Interest Rate Calculation',
+      formula: 'Monthly Rate = Annual Rate ÷ 12',
+      values: {
+        annualRate: interestRate.value,
+        monthlyRate: (monthlyInterestRate.value * 100).toFixed(3)
+      },
+      calculation: [
+        '{annualRate}% ÷ 12 = {monthlyRate}%'
+      ],
+      result: `${(monthlyInterestRate.value * 100).toFixed(3)}% per month`,
+      explanation: 'Standard mortgage calculation - annual rate divided by 12 months for monthly compounding.'
+    },
+    
+    basePayoffTime: {
+      title: 'Base Payoff Time Calculation',
+      formula: 'Amortization Schedule: Monthly payments until balance = 0',
+      values: {
+        principal: principal.value,
+        monthlyPayment: monthlyPayment.value,
+        monthlyRate: (monthlyInterestRate.value * 100).toFixed(3),
+        months: basePayoffMonths.value
+      },
+      calculation: [
+        'Each month: Interest = Balance × {monthlyRate}%',
+        'Principal Payment = {monthlyPayment} - Interest',
+        'New Balance = Balance - Principal Payment',
+        'Repeat until balance reaches $0'
+      ],
+      result: `${Math.floor(basePayoffMonths.value / 12)} years, ${basePayoffMonths.value % 12} months`,
+      explanation: 'Standard amortization schedule with regular monthly payments only.'
+    },
+    
+    acceleratedPayoffTime: {
+      title: 'Accelerated Payoff Time Calculation',
+      formula: 'Modified Amortization: Regular + Extra payments until balance = 0',
+      values: {
+        principal: principal.value,
+        regularPayment: monthlyPayment.value,
+        extraMonthly: additionalMonthlyPayment.value,
+        lumpSum: lumpSumPayment.value,
+        totalPayment: monthlyPayment.value + additionalMonthlyPayment.value,
+        months: acceleratedPayoffMonths.value
+      },
+      calculation: [
+        'Total Monthly Payment = {regularPayment} + {extraMonthly} = {totalPayment}',
+        'Lump Sum Applied: {lumpSum}',
+        'Each month: Interest = Balance × Monthly Rate',
+        'Principal Payment = {totalPayment} - Interest',
+        'Extra payments reduce principal faster'
+      ],
+      result: `${Math.floor(acceleratedPayoffMonths.value / 12)} years, ${acceleratedPayoffMonths.value % 12} months`,
+      explanation: 'Amortization with extra payments - additional amounts go directly to principal.'
+    },
+    
+    interestSaved: {
+      title: 'Interest Saved Calculation',
+      formula: 'Interest Saved = Base Total Interest - Accelerated Total Interest',
+      values: {
+        baseTotalInterest: baseTotalInterest.value,
+        acceleratedTotalInterest: acceleratedTotalInterest.value,
+        interestSaved: interestSaved.value
+      },
+      calculation: [
+        'Base Total Interest = {baseTotalInterest}',
+        'Accelerated Total Interest = {acceleratedTotalInterest}',
+        'Interest Saved = {baseTotalInterest} - {acceleratedTotalInterest}',
+        '= {interestSaved}'
+      ],
+      result: `Save ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(interestSaved.value)}`,
+      explanation: 'Extra payments reduce the loan balance faster, so less interest accrues over the life of the loan.'
+    },
+    
+    totalContributions: {
+      title: 'Total Contributions Calculation',
+      formula: 'Total = (Extra Monthly × Months) + Lump Sum',
+      values: {
+        extraMonthly: additionalMonthlyPayment.value,
+        months: acceleratedPayoffMonths.value,
+        monthlyTotal: totalMonthlyContributions.value,
+        lumpSum: lumpSumPayment.value,
+        totalAll: totalAllContributions.value
+      },
+      calculation: [
+        'Monthly Contributions = {extraMonthly} × {months} = {monthlyTotal}',
+        'Lump Sum Contributions = {lumpSum}',
+        'Total All Contributions = {monthlyTotal} + {lumpSum} = {totalAll}'
+      ],
+      result: `Total extra payments: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(totalAllContributions.value)}`,
+      explanation: 'Sum of all additional money put toward the mortgage beyond regular payments.'
+    },
+    
+    investmentGrossReturn: {
+      title: 'Investment Gross Return Calculation',
+      formula: 'Compound Growth: Lump Sum + Monthly Contributions',
+      values: {
+        lumpSum: lumpSumPayment.value,
+        monthlyContrib: additionalMonthlyPayment.value,
+        monthlyReturn: ((investmentReturnRate.value / 100 / 12) * 100).toFixed(3),
+        months: acceleratedPayoffMonths.value,
+        grossReturn: investmentGrossReturn.value
+      },
+      calculation: [
+        'Monthly Return Rate = {monthlyReturn}%',
+        'Lump Sum Growth: {lumpSum} × (1 + rate)^{months}',
+        'Monthly Contributions: {monthlyContrib}/month compounded',
+        'Total Investment Value = Lump Sum FV + Monthly FV'
+      ],
+      result: `Investment grows to ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(investmentGrossReturn.value)}`,
+      explanation: 'If extra payments were invested instead, this would be the gross return before taxes.'
+    },
+    
+    investmentProfit: {
+      title: 'Investment Profit Calculation',
+      formula: 'Profit = Gross Investment Return - Total Amount Invested',
+      values: {
+        grossReturn: investmentGrossReturn.value,
+        totalInvested: totalAllContributions.value,
+        profit: investmentProfit.value
+      },
+      calculation: [
+        'Gross Investment Return = {grossReturn}',
+        'Total Amount Invested = {totalInvested}',
+        'Taxable Profit = {grossReturn} - {totalInvested}',
+        '= {profit}'
+      ],
+      result: `Taxable profit: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(investmentProfit.value)}`,
+      explanation: 'Only the profit portion (gains) of your investment is subject to capital gains tax, not the entire return.'
+    },
+    
+    investmentTaxes: {
+      title: 'Capital Gains Tax Calculation',
+      formula: 'Taxes Owed = Investment Profit × Tax Rate',
+      values: {
+        profit: investmentProfit.value,
+        taxRate: investmentTaxRate.value,
+        taxes: investmentTaxes.value
+      },
+      calculation: [
+        'Investment Profit = {profit}',
+        'Capital Gains Tax Rate = {taxRate}%',
+        'Taxes Owed = {profit} × {taxRate}%',
+        '= {taxes}'
+      ],
+      result: `Capital gains tax: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(investmentTaxes.value)}`,
+      explanation: 'Capital gains tax is only applied to the profit portion of your investment, reducing your net return.'
+    },
+    
+    investmentNetReturn: {
+      title: 'Investment Net Return (After Tax)',
+      formula: 'Net Return = Gross Return - (Profit × Tax Rate)',
+      values: {
+        grossReturn: investmentGrossReturn.value,
+        totalInvested: totalAllContributions.value,
+        profit: investmentProfit.value,
+        taxRate: investmentTaxRate.value,
+        taxes: investmentTaxes.value,
+        netReturn: investmentNetReturn.value
+      },
+      calculation: [
+        'Gross Return = {grossReturn}',
+        'Total Invested = {totalInvested}',
+        'Taxable Profit = {grossReturn} - {totalInvested} = {profit}',
+        'Taxes = {profit} × {taxRate}% = {taxes}',
+        'Net Return = {grossReturn} - {taxes} = {netReturn}'
+      ],
+      result: `After-tax investment value: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(investmentNetReturn.value)}`,
+      explanation: 'Investment return after capital gains taxes - the real value you would keep.'
+    },
+    
+    strategyRecommendation: {
+      title: 'Strategy Recommendation Analysis',
+      formula: 'Compare: Interest Saved vs Investment Net Benefit',
+      values: {
+        interestSaved: interestSaved.value,
+        investmentNetBenefit: investmentNetReturn.value - totalAllContributions.value,
+        totalInvested: totalAllContributions.value,
+        netReturn: investmentNetReturn.value,
+        betterStrategy: betterStrategy.value,
+        difference: Math.abs(interestSaved.value - (investmentNetReturn.value - totalAllContributions.value))
+      },
+      calculation: [
+        'Mortgage Payoff Benefit = {interestSaved}',
+        'Investment Net Benefit = {netReturn} - {totalInvested} = {investmentNetBenefit}',
+        'Difference = {difference}',
+        `Better Strategy: ${betterStrategy.value === 'payoff' ? 'Pay Off Mortgage' : 'Invest Extra Payments'}`
+      ],
+      result: `Recommendation: ${betterStrategy.value === 'payoff' ? 'Pay off mortgage early' : 'Invest the extra payments'}`,
+      explanation: betterStrategy.value === 'payoff' ? 
+        'Paying off the mortgage saves more money than investing after taxes.' :
+        'Investing the extra payments yields better returns than the interest saved.'
+    }
+  }))
+
   const debugState = () => {
     const state = {
       // Input values
@@ -190,6 +398,9 @@ export const useMortgagePayoffStore = defineStore('mortgagePayoff', () => {
         acceleratedTotalInterest: acceleratedTotalInterest.value,
         monthsSaved: monthsSaved.value,
         interestSaved: interestSaved.value,
+        totalMonthlyContributions: totalMonthlyContributions.value,
+        totalLumpSumContributions: totalLumpSumContributions.value,
+        totalAllContributions: totalAllContributions.value,
         investmentGrossReturn: investmentGrossReturn.value,
         investmentProfit: investmentProfit.value,
         investmentTaxes: investmentTaxes.value,
@@ -257,6 +468,9 @@ it('should calculate mortgage payoff correctly', () => {
     acceleratedTotalInterest,
     monthsSaved,
     interestSaved,
+    totalMonthlyContributions,
+    totalLumpSumContributions,
+    totalAllContributions,
     investmentGrossReturn,
     investmentProfit,
     investmentTaxes,
@@ -265,6 +479,7 @@ it('should calculate mortgage payoff correctly', () => {
     balanceChartData,
     interestComparisonChartData,
     investmentComparisonChartData,
+    tooltipData,
     resetToDefaults,
     debugState
   }

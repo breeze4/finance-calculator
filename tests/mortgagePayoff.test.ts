@@ -1222,4 +1222,62 @@ describe('Mortgage Payoff Calculator', () => {
       expect(Number.isFinite(store.basePayoffMonths)).toBe(true)
     })
   })
+
+  describe('tooltipData', () => {
+    it('should provide tooltip data for all calculations', () => {
+      const store = useMortgagePayoffStore()
+      expect(store.tooltipData).toBeDefined()
+      
+      // Check that all expected tooltip data exists
+      expect(store.tooltipData.monthlyInterestRate).toBeDefined()
+      expect(store.tooltipData.basePayoffTime).toBeDefined()
+      expect(store.tooltipData.acceleratedPayoffTime).toBeDefined()
+      expect(store.tooltipData.interestSaved).toBeDefined()
+      expect(store.tooltipData.totalContributions).toBeDefined()
+      expect(store.tooltipData.investmentGrossReturn).toBeDefined()
+      expect(store.tooltipData.investmentProfit).toBeDefined()
+      expect(store.tooltipData.investmentTaxes).toBeDefined()
+      expect(store.tooltipData.investmentNetReturn).toBeDefined()
+      expect(store.tooltipData.strategyRecommendation).toBeDefined()
+      
+      // Check structure of tooltip data
+      const tooltip = store.tooltipData.monthlyInterestRate
+      expect(tooltip.title).toBeDefined()
+      expect(tooltip.formula).toBeDefined()
+      expect(tooltip.values).toBeDefined()
+      expect(tooltip.calculation).toBeDefined()
+      expect(tooltip.result).toBeDefined()
+      expect(tooltip.explanation).toBeDefined()
+    })
+
+    it('should have correct monthly interest rate tooltip content', () => {
+      const store = useMortgagePayoffStore()
+      const tooltip = store.tooltipData.monthlyInterestRate
+      expect(tooltip.title).toBe('Monthly Interest Rate Calculation')
+      expect(tooltip.formula).toBe('Monthly Rate = Annual Rate ÷ 12')
+      expect(tooltip.values.annualRate).toBe(store.interestRate)
+      expect(tooltip.calculation[0]).toBe('{annualRate}% ÷ 12 = {monthlyRate}%')
+      expect(tooltip.result).toContain('per month')
+    })
+
+    it('should have correct strategy recommendation tooltip content', () => {
+      const store = useMortgagePayoffStore()
+      const tooltip = store.tooltipData.strategyRecommendation
+      expect(tooltip.title).toBe('Strategy Recommendation Analysis')
+      expect(tooltip.formula).toBe('Compare: Interest Saved vs Investment Net Benefit')
+      expect(tooltip.values.betterStrategy).toBe(store.betterStrategy)
+      expect(tooltip.explanation).toContain(store.betterStrategy === 'payoff' ? 'mortgage' : 'invest')
+    })
+
+    it('should update tooltip data when store values change', () => {
+      const store = useMortgagePayoffStore()
+      const initialRate = store.tooltipData.monthlyInterestRate.values.annualRate
+      
+      store.interestRate = 6.0
+      const updatedRate = store.tooltipData.monthlyInterestRate.values.annualRate
+      
+      expect(updatedRate).toBe(6.0)
+      expect(updatedRate).not.toBe(initialRate)
+    })
+  })
 })

@@ -1,9 +1,18 @@
 <template>
-  <div class="math-tooltip-container" :class="{ 'disabled': props.disabled }">
+  <div 
+    ref="containerRef"
+    class="math-tooltip-container" 
+    :class="{ 'disabled': props.disabled }"
+    @mouseenter="handleMouseEnter"
+  >
     <slot />
     <div 
+      ref="tooltipRef"
       class="math-tooltip"
-      :class="{ 'math-tooltip-mobile': isMobile }"
+      :class="{ 
+        'math-tooltip-mobile': isMobile,
+        'math-tooltip-below': showBelow && !isMobile 
+      }"
       @click.stop
     >
       <div class="math-tooltip-content">
@@ -56,6 +65,9 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const isMobile = ref(false)
+const showBelow = ref(false)
+const tooltipRef = ref<HTMLElement>()
+const containerRef = ref<HTMLElement>()
 
 const formattedFormula = computed(() => {
   if (!props.formula) return ''
@@ -117,6 +129,33 @@ function checkMobile() {
   isMobile.value = window.innerWidth <= 768
 }
 
+function checkTooltipPosition() {
+  if (!containerRef.value || !tooltipRef.value || isMobile.value) {
+    showBelow.value = false
+    return
+  }
+
+  const containerRect = containerRef.value.getBoundingClientRect()
+  const tooltipHeight = tooltipRef.value.offsetHeight || 400 // Estimate if not visible
+  const spaceAbove = containerRect.top
+  const spaceBelow = window.innerHeight - containerRect.bottom
+  
+  // If there's not enough space above (need at least tooltip height + margin)
+  const requiredSpaceAbove = tooltipHeight + 16 // 8px margin + some buffer
+  
+  // Show below if there's insufficient space above OR if there's much more space below
+  showBelow.value = spaceAbove < requiredSpaceAbove && spaceBelow > tooltipHeight
+}
+
+function handleMouseEnter() {
+  if (!isMobile.value) {
+    // Small delay to ensure tooltip is in DOM before measuring
+    setTimeout(() => {
+      checkTooltipPosition()
+    }, 10)
+  }
+}
+
 onMounted(() => {
   checkMobile()
   window.addEventListener('resize', checkMobile)
@@ -166,7 +205,27 @@ onUnmounted(() => {
   visibility: hidden;
 }
 
-/* Simplified positioning - always center above the trigger */
+/* Below positioning when there's insufficient space above */
+.math-tooltip-below {
+  bottom: auto;
+  top: 100%;
+  margin-bottom: 0;
+  margin-top: 8px;
+  transform: translateX(-50%) translateY(8px);
+}
+
+.math-tooltip-container:hover .math-tooltip-below {
+  transform: translateX(-50%) translateY(0);
+}
+
+.math-tooltip-below::after {
+  top: auto;
+  bottom: 100%;
+  border-top-color: transparent;
+  border-bottom-color: #2c3e50;
+}
+
+/* Default positioning - center above the trigger */
 
 .math-tooltip::after {
   content: '';

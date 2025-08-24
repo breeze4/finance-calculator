@@ -279,3 +279,217 @@ export function formatLogarithmicTimeSteps(
   
   return steps
 }
+
+/**
+ * Format monthly interest rate calculation steps
+ * @param annualRate - Annual interest rate (as percentage, e.g., 4.5 for 4.5%)
+ * @param showSteps - Whether to show intermediate steps
+ * @returns Array of calculation step strings
+ */
+export function formatMonthlyRateSteps(
+  annualRate: number,
+  showSteps: boolean = true
+): string[] {
+  const steps: string[] = []
+  const monthlyRate = annualRate / 12
+  
+  steps.push(`Monthly Rate = Annual Rate ÷ 12`)
+  
+  if (showSteps) {
+    steps.push(`Monthly Rate = ${formatPercentage(annualRate)} ÷ 12`)
+  }
+  
+  steps.push(`Monthly Rate = ${formatPercentage(monthlyRate, 3)}`)
+  
+  return steps
+}
+
+/**
+ * Format amortization calculation steps showing how monthly payments are applied
+ * @param principal - Initial loan balance
+ * @param monthlyPayment - Monthly payment amount
+ * @param monthlyRate - Monthly interest rate (as decimal)
+ * @param months - Number of months to show (default: 3)
+ * @param showSteps - Whether to show intermediate steps
+ * @returns Array of calculation step strings
+ */
+export function formatAmortizationSteps(
+  principal: number,
+  monthlyPayment: number,
+  monthlyRate: number,
+  months: number = 3,
+  showSteps: boolean = true
+): string[] {
+  const steps: string[] = []
+  let balance = principal
+  const monthlyRatePercent = monthlyRate * 100
+  
+  steps.push(`Amortization Formula (each month):`)
+  steps.push(`Interest = Balance × Monthly Rate`)
+  steps.push(`Principal Payment = Monthly Payment - Interest`)
+  steps.push(`New Balance = Balance - Principal Payment`)
+  
+  if (showSteps && months > 0) {
+    steps.push(``) // Empty line for readability
+    
+    for (let i = 1; i <= Math.min(months, 3); i++) {
+      const interestPayment = balance * monthlyRate
+      const principalPayment = monthlyPayment - interestPayment
+      balance = Math.max(0, balance - principalPayment)
+      
+      steps.push(`Month ${i}:`)
+      steps.push(`  Interest = ${formatCurrency(balance + principalPayment)} × ${formatPercentage(monthlyRatePercent, 3)} = ${formatCurrency(interestPayment)}`)
+      steps.push(`  Principal = ${formatCurrency(monthlyPayment)} - ${formatCurrency(interestPayment)} = ${formatCurrency(principalPayment)}`)
+      steps.push(`  New Balance = ${formatCurrency(balance)}`)
+      
+      if (balance <= 0) break
+    }
+    
+    if (balance > 0 && months > 3) {
+      steps.push(`  ... (continues for remaining months)`)
+    }
+  }
+  
+  return steps
+}
+
+/**
+ * Format investment compounding calculation steps with monthly contributions
+ * @param lumpSum - Initial lump sum investment
+ * @param monthlyContribution - Monthly investment contribution
+ * @param monthlyRate - Monthly return rate (as decimal)
+ * @param months - Number of months
+ * @param showSteps - Whether to show intermediate steps
+ * @returns Array of calculation step strings
+ */
+export function formatInvestmentCompoundingSteps(
+  lumpSum: number,
+  monthlyContribution: number,
+  monthlyRate: number,
+  months: number,
+  showSteps: boolean = true
+): string[] {
+  const steps: string[] = []
+  const years = Math.round(months / 12 * 10) / 10
+  
+  // Calculate future value of lump sum
+  const lumpSumFV = lumpSum * Math.pow(1 + monthlyRate, months)
+  
+  // Calculate future value of monthly contributions (annuity formula)
+  const monthlyFV = monthlyContribution === 0 ? 0 : 
+    monthlyContribution * (Math.pow(1 + monthlyRate, months) - 1) / monthlyRate
+  
+  const totalFV = lumpSumFV + monthlyFV
+  
+  steps.push(`Investment Growth = Lump Sum Growth + Monthly Contributions Growth`)
+  
+  if (showSteps) {
+    // Lump sum calculation
+    if (lumpSum > 0) {
+      steps.push(``)
+      steps.push(`Lump Sum Growth:`)
+      steps.push(`  FV = ${formatCurrency(lumpSum)} × (1 + ${formatPercentage(monthlyRate * 100, 3)})<sup>${months}</sup>`)
+      steps.push(`  FV = ${formatCurrency(lumpSum)} × ${formatNumber(Math.pow(1 + monthlyRate, months), 3)}`)
+      steps.push(`  FV = ${formatCurrency(lumpSumFV)}`)
+    }
+    
+    // Monthly contributions calculation
+    if (monthlyContribution > 0) {
+      steps.push(``)
+      steps.push(`Monthly Contributions Growth (${formatCurrency(monthlyContribution)}/month for ${years} years):`)
+      steps.push(`  FV = PMT × [(1 + r)<sup>n</sup> - 1] ÷ r`)
+      steps.push(`  FV = ${formatCurrency(monthlyContribution)} × [${formatNumber(Math.pow(1 + monthlyRate, months), 3)} - 1] ÷ ${formatNumber(monthlyRate, 6)}`)
+      steps.push(`  FV = ${formatCurrency(monthlyContribution)} × ${formatNumber((Math.pow(1 + monthlyRate, months) - 1) / monthlyRate, 2)}`)
+      steps.push(`  FV = ${formatCurrency(monthlyFV)}`)
+    }
+    
+    steps.push(``)
+    steps.push(`Total Investment Value:`)
+    if (lumpSum > 0 && monthlyContribution > 0) {
+      steps.push(`  Total = ${formatCurrency(lumpSumFV)} + ${formatCurrency(monthlyFV)}`)
+    }
+  }
+  
+  steps.push(`Total Investment Value = ${formatCurrency(totalFV)}`)
+  
+  return steps
+}
+
+/**
+ * Format tax calculation steps for capital gains
+ * @param grossReturn - Gross investment return
+ * @param totalInvested - Total amount invested
+ * @param taxRate - Tax rate (as decimal, e.g., 0.20 for 20%)
+ * @param showSteps - Whether to show intermediate steps
+ * @returns Array of calculation step strings
+ */
+export function formatTaxCalculationSteps(
+  grossReturn: number,
+  totalInvested: number,
+  taxRate: number,
+  showSteps: boolean = true
+): string[] {
+  const steps: string[] = []
+  const profit = Math.max(0, grossReturn - totalInvested)
+  const taxes = profit * taxRate
+  const netReturn = grossReturn - taxes
+  const taxRatePercent = taxRate * 100
+  
+  steps.push(`After-Tax Calculation:`)
+  steps.push(`Taxable Profit = Gross Return - Total Invested`)
+  steps.push(`Taxes = Taxable Profit × Tax Rate`)
+  steps.push(`Net Return = Gross Return - Taxes`)
+  
+  if (showSteps) {
+    steps.push(``)
+    steps.push(`Taxable Profit = ${formatCurrency(grossReturn)} - ${formatCurrency(totalInvested)}`)
+    steps.push(`Taxable Profit = ${formatCurrency(profit)}`)
+    steps.push(``)
+    steps.push(`Taxes = ${formatCurrency(profit)} × ${formatPercentage(taxRatePercent)}`)
+    steps.push(`Taxes = ${formatCurrency(taxes)}`)
+    steps.push(``)
+    steps.push(`Net Return = ${formatCurrency(grossReturn)} - ${formatCurrency(taxes)}`)
+  }
+  
+  steps.push(`Net Return = ${formatCurrency(netReturn)}`)
+  
+  return steps
+}
+
+/**
+ * Format payoff comparison calculation steps
+ * @param interestSaved - Amount of interest saved by paying off early
+ * @param investmentNetBenefit - Net benefit from investing instead (net return - invested amount)
+ * @param showSteps - Whether to show intermediate steps
+ * @returns Array of calculation step strings
+ */
+export function formatPayoffComparisonSteps(
+  interestSaved: number,
+  investmentNetBenefit: number,
+  showSteps: boolean = true
+): string[] {
+  const steps: string[] = []
+  const betterStrategy = interestSaved > investmentNetBenefit ? 'Payoff' : 'Investment'
+  const difference = Math.abs(interestSaved - investmentNetBenefit)
+  
+  steps.push(`Strategy Comparison:`)
+  steps.push(`Compare Interest Saved vs Investment Net Benefit`)
+  
+  if (showSteps) {
+    steps.push(``)
+    steps.push(`Mortgage Payoff Benefit: ${formatCurrency(interestSaved)}`)
+    steps.push(`Investment Net Benefit: ${formatCurrency(investmentNetBenefit)}`)
+    steps.push(``)
+    if (interestSaved > investmentNetBenefit) {
+      steps.push(`${formatCurrency(interestSaved)} > ${formatCurrency(investmentNetBenefit)}`)
+      steps.push(`Payoff is better by ${formatCurrency(difference)}`)
+    } else {
+      steps.push(`${formatCurrency(investmentNetBenefit)} > ${formatCurrency(interestSaved)}`)
+      steps.push(`Investment is better by ${formatCurrency(difference)}`)
+    }
+  }
+  
+  steps.push(`Recommended Strategy: ${betterStrategy}`)
+  
+  return steps
+}

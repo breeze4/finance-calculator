@@ -2,6 +2,7 @@
 import { useMortgagePayoffStore } from '../stores/mortgagePayoff'
 import { ref } from 'vue'
 import MortgageBalanceChart from '../components/charts/MortgageBalanceChart.vue'
+import MathTooltip from '../components/MathTooltip.vue'
 
 const store = useMortgagePayoffStore()
 const showResetFeedback = ref(false)
@@ -187,7 +188,16 @@ const formatMonths = (months: number) => {
             <h4>Current Schedule</h4>
             <div class="stat-item">
               <span class="label">Time to Payoff:</span>
-              <span class="value">{{ formatMonths(store.basePayoffMonths) }}</span>
+              <MathTooltip
+                :title="store.tooltipData.basePayoffTime.title"
+                :formula="store.tooltipData.basePayoffTime.formula"
+                :values="store.tooltipData.basePayoffTime.values"
+                :calculation="store.tooltipData.basePayoffTime.calculation"
+                :result="store.tooltipData.basePayoffTime.result"
+                :explanation="store.tooltipData.basePayoffTime.explanation"
+              >
+                <span class="value math-tooltip-trigger">{{ formatMonths(store.basePayoffMonths) }}</span>
+              </MathTooltip>
             </div>
             <div class="stat-item">
               <span class="label">Total Interest:</span>
@@ -199,7 +209,16 @@ const formatMonths = (months: number) => {
             <h4>With Extra Payments</h4>
             <div class="stat-item">
               <span class="label">Time to Payoff:</span>
-              <span class="value success">{{ formatMonths(store.acceleratedPayoffMonths) }}</span>
+              <MathTooltip
+                :title="store.tooltipData.acceleratedPayoffTime.title"
+                :formula="store.tooltipData.acceleratedPayoffTime.formula"
+                :values="store.tooltipData.acceleratedPayoffTime.values"
+                :calculation="store.tooltipData.acceleratedPayoffTime.calculation"
+                :result="store.tooltipData.acceleratedPayoffTime.result"
+                :explanation="store.tooltipData.acceleratedPayoffTime.explanation"
+              >
+                <span class="value success math-tooltip-trigger">{{ formatMonths(store.acceleratedPayoffMonths) }}</span>
+              </MathTooltip>
             </div>
             <div class="stat-item">
               <span class="label">Total Interest:</span>
@@ -216,7 +235,50 @@ const formatMonths = (months: number) => {
           </div>
           <div class="summary-item">
             <span class="label">Interest Saved:</span>
-            <span class="value highlight">{{ formatCurrency(store.interestSaved) }}</span>
+            <MathTooltip
+              :title="store.tooltipData.interestSaved.title"
+              :formula="store.tooltipData.interestSaved.formula"
+              :values="store.tooltipData.interestSaved.values"
+              :calculation="store.tooltipData.interestSaved.calculation"
+              :result="store.tooltipData.interestSaved.result"
+              :explanation="store.tooltipData.interestSaved.explanation"
+            >
+              <span class="value highlight math-tooltip-trigger">{{ formatCurrency(store.interestSaved) }}</span>
+            </MathTooltip>
+          </div>
+        </div>
+        
+        <div class="contributions-summary">
+          <h4>Total Contributions</h4>
+          <div class="summary-item">
+            <span class="label">Monthly Contributions:</span>
+            <MathTooltip
+              :title="store.tooltipData.totalContributions.title"
+              :formula="store.tooltipData.totalContributions.formula"
+              :values="store.tooltipData.totalContributions.values"
+              :calculation="store.tooltipData.totalContributions.calculation"
+              :result="store.tooltipData.totalContributions.result"
+              :explanation="store.tooltipData.totalContributions.explanation"
+            >
+              <span class="value math-tooltip-trigger">{{ formatCurrency(store.totalMonthlyContributions) }}</span>
+            </MathTooltip>
+          </div>
+          <div class="summary-item">
+            <span class="label">Lump Sum Contributions:</span>
+            <span class="value">{{ formatCurrency(store.totalLumpSumContributions) }}</span>
+          </div>
+          <div class="summary-item">
+            <span class="label">Total All Contributions:</span>
+            <MathTooltip
+              :title="store.tooltipData.totalContributions.title"
+              :formula="store.tooltipData.totalContributions.formula"
+              :values="store.tooltipData.totalContributions.values"
+              :calculation="store.tooltipData.totalContributions.calculation"
+              :result="store.tooltipData.totalContributions.result"
+              :explanation="store.tooltipData.totalContributions.explanation"
+            >
+              <span class="value highlight math-tooltip-trigger">{{ formatCurrency(store.totalAllContributions) }}</span>
+            </MathTooltip>
           </div>
         </div>
         
@@ -226,24 +288,69 @@ const formatMonths = (months: number) => {
           <div class="investment-card">
             <div class="stat-item">
               <span class="label">Investment Value:</span>
-              <span class="value">{{ formatCurrency(store.investmentGrossReturn) }}</span>
+              <MathTooltip
+                :title="store.tooltipData.investmentGrossReturn.title"
+                :formula="store.tooltipData.investmentGrossReturn.formula"
+                :values="store.tooltipData.investmentGrossReturn.values"
+                :calculation="store.tooltipData.investmentGrossReturn.calculation"
+                :result="store.tooltipData.investmentGrossReturn.result"
+                :explanation="store.tooltipData.investmentGrossReturn.explanation"
+              >
+                <span class="value math-tooltip-trigger">{{ formatCurrency(store.investmentGrossReturn) }}</span>
+              </MathTooltip>
             </div>
             <div class="stat-item">
               <span class="label">Investment Profit:</span>
-              <span class="value">{{ formatCurrency(store.investmentProfit) }}</span>
+              <MathTooltip
+                :title="store.tooltipData.investmentProfit.title"
+                :formula="store.tooltipData.investmentProfit.formula"
+                :values="store.tooltipData.investmentProfit.values"
+                :calculation="store.tooltipData.investmentProfit.calculation"
+                :result="store.tooltipData.investmentProfit.result"
+                :explanation="store.tooltipData.investmentProfit.explanation"
+              >
+                <span class="value math-tooltip-trigger">{{ formatCurrency(store.investmentProfit) }}</span>
+              </MathTooltip>
             </div>
             <div class="stat-item">
               <span class="label">Taxes Owed:</span>
-              <span class="value">{{ formatCurrency(store.investmentTaxes) }}</span>
+              <MathTooltip
+                :title="store.tooltipData.investmentTaxes.title"
+                :formula="store.tooltipData.investmentTaxes.formula"
+                :values="store.tooltipData.investmentTaxes.values"
+                :calculation="store.tooltipData.investmentTaxes.calculation"
+                :result="store.tooltipData.investmentTaxes.result"
+                :explanation="store.tooltipData.investmentTaxes.explanation"
+              >
+                <span class="value math-tooltip-trigger">{{ formatCurrency(store.investmentTaxes) }}</span>
+              </MathTooltip>
             </div>
             <div class="stat-item">
               <span class="label">Net Investment Return:</span>
-              <span class="value highlight">{{ formatCurrency(store.investmentNetReturn) }}</span>
+              <MathTooltip
+                :title="store.tooltipData.investmentNetReturn.title"
+                :formula="store.tooltipData.investmentNetReturn.formula"
+                :values="store.tooltipData.investmentNetReturn.values"
+                :calculation="store.tooltipData.investmentNetReturn.calculation"
+                :result="store.tooltipData.investmentNetReturn.result"
+                :explanation="store.tooltipData.investmentNetReturn.explanation"
+              >
+                <span class="value highlight math-tooltip-trigger">{{ formatCurrency(store.investmentNetReturn) }}</span>
+              </MathTooltip>
             </div>
           </div>
           
           <div class="recommendation" :class="store.betterStrategy">
-            <h5>Recommendation</h5>
+            <MathTooltip
+              :title="store.tooltipData.strategyRecommendation.title"
+              :formula="store.tooltipData.strategyRecommendation.formula"
+              :values="store.tooltipData.strategyRecommendation.values"
+              :calculation="store.tooltipData.strategyRecommendation.calculation"
+              :result="store.tooltipData.strategyRecommendation.result"
+              :explanation="store.tooltipData.strategyRecommendation.explanation"
+            >
+              <h5 class="math-tooltip-trigger">Recommendation</h5>
+            </MathTooltip>
             <p v-if="store.betterStrategy === 'payoff'">
               Paying off your mortgage early saves you {{ formatCurrency(store.interestSaved) }} 
               in interest, which is better than the after-tax investment return.
@@ -441,6 +548,18 @@ h3 {
   margin-bottom: 1rem;
 }
 
+.contributions-summary {
+  background: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 4px;
+  margin-bottom: 1.5rem;
+}
+
+.contributions-summary h4 {
+  color: #2c3e50;
+  margin-bottom: 1rem;
+}
+
 .investment-results {
   margin-top: 1.5rem;
 }
@@ -476,6 +595,24 @@ h3 {
 .recommendation p {
   color: #666;
   line-height: 1.6;
+}
+
+.math-tooltip-trigger {
+  cursor: help;
+  border-bottom: 1px dotted #409eff;
+  position: relative;
+  transition: all 0.2s ease;
+  padding: 2px 4px;
+  margin: -2px -4px;
+  border-radius: 3px;
+}
+
+.math-tooltip-trigger:hover {
+  background-color: #f0f9ff;
+  border-bottom-style: solid;
+  border-bottom-color: #409eff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(64, 158, 255, 0.2);
 }
 
 @media (max-width: 768px) {

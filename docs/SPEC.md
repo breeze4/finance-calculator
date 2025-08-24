@@ -152,6 +152,60 @@ principalPayment = payment - interestCharge
 balance -= principalPayment
 ```
 
+**Mathematical Tooltips System** 🚧 PLANNED:
+Apply the same educational tooltip system as Coast FIRE to mortgage calculations, showing:
+- Exact formulas used with proper mathematical notation
+- Current input values substituted with clean formatting
+- Step-by-step calculation breakdown with intermediate results
+- Educational explanations of mortgage and investment concepts
+
+**Result Fields Requiring Tooltips**:
+1. **Monthly Interest Rate** - Convert annual rate to monthly
+   - Formula: `Monthly Rate = Annual Rate ÷ 12`
+   - Example: "4.5% ÷ 12 = 0.375%"
+   - Educational: Standard mortgage interest calculation
+
+2. **Base Payoff Time** - Time to pay off with regular payments
+   - Formula: Amortization schedule calculation
+   - Example: Complex iterative calculation showing month-by-month breakdown
+   - Educational: How mortgage amortization works
+
+3. **Accelerated Payoff Time** - Time with extra payments
+   - Formula: Modified amortization with extra principal
+   - Example: Show impact of additional payments on timeline
+   - Educational: How extra payments accelerate payoff
+
+4. **Interest Saved** - Difference between base and accelerated interest
+   - Formula: `Interest Saved = Base Total Interest - Accelerated Total Interest`
+   - Example: "$45,123 - $32,456 = $12,667"
+   - Educational: Why extra payments save so much interest
+
+5. **Total Contributions** - Sum of all extra payments
+   - Formula: `Total = (Extra Monthly × Months) + Lump Sum`
+   - Example: "($200 × 180) + $5,000 = $41,000"
+   - Educational: Total out-of-pocket for acceleration
+
+6. **Investment Gross Return** (when shown)
+   - Formula: Compound growth with monthly contributions
+   - Example: Complex calculation showing lump sum + monthly growth
+   - Educational: How investment compounding works
+
+7. **Investment Net Return** (when shown)
+   - Formula: `Net = Gross Return - (Capital Gains × Tax Rate)`
+   - Example: "$67,890 - ($15,000 × 20%) = $64,890"
+   - Educational: After-tax investment reality
+
+8. **Strategy Recommendation** (when shown)
+   - Logic: Comparison between interest saved vs investment net benefit
+   - Example: "Interest Saved: $12,667 vs Net Investment Benefit: $8,234"
+   - Educational: Factors in mortgage vs investment decision
+
+**Mortgage-Specific Mathematical Functions**:
+- `formatAmortizationSteps()`: Show monthly payment breakdown
+- `formatInvestmentCompoundingSteps()`: Investment growth with contributions
+- `formatTaxCalculationSteps()`: Capital gains tax calculation
+- `formatPayoffComparisonSteps()`: Side-by-side payoff scenarios
+
 ## Chart Implementation
 
 ### Base Components

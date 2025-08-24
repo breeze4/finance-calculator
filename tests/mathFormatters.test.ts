@@ -10,7 +10,12 @@ import {
   formatPresentValueSteps,
   formatFisherEquationSteps,
   formatWithdrawalSteps,
-  formatLogarithmicTimeSteps
+  formatLogarithmicTimeSteps,
+  formatMonthlyRateSteps,
+  formatAmortizationSteps,
+  formatInvestmentCompoundingSteps,
+  formatTaxCalculationSteps,
+  formatPayoffComparisonSteps
 } from '../src/utils/mathFormatters'
 
 describe('Mathematical Formatters', () => {
@@ -163,6 +168,115 @@ describe('Mathematical Formatters', () => {
       // ln(1000000/50000) / ln(1.07) = ln(20) / ln(1.07) ≈ 44.27 years
       const steps = formatLogarithmicTimeSteps(1000000, 50000, 0.07, 30, false)
       expect(steps[1]).toContain('74.3 years old') // 30 + 44.3 ≈ 74.3
+    })
+  })
+
+  describe('formatMonthlyRateSteps', () => {
+    it('formats monthly rate calculation correctly', () => {
+      const result = formatMonthlyRateSteps(4.5, true)
+      expect(result[0]).toBe('Monthly Rate = Annual Rate ÷ 12')
+      expect(result[1]).toBe('Monthly Rate = 4.5% ÷ 12')
+      expect(result[2]).toBe('Monthly Rate = 0.375%')
+    })
+
+    it('works without detailed steps', () => {
+      const result = formatMonthlyRateSteps(6.0, false)
+      expect(result).toHaveLength(2)
+      expect(result[0]).toBe('Monthly Rate = Annual Rate ÷ 12')
+      expect(result[1]).toBe('Monthly Rate = 0.500%')
+    })
+  })
+
+  describe('formatAmortizationSteps', () => {
+    it('formats amortization steps correctly', () => {
+      const result = formatAmortizationSteps(300000, 1500, 0.00375, 2, true)
+      expect(result[0]).toBe('Amortization Formula (each month):')
+      expect(result[1]).toBe('Interest = Balance × Monthly Rate')
+      expect(result[2]).toBe('Principal Payment = Monthly Payment - Interest')
+      expect(result[3]).toBe('New Balance = Balance - Principal Payment')
+      expect(result.some(step => step.includes('Month 1:'))).toBe(true)
+      expect(result.some(step => step.includes('Month 2:'))).toBe(true)
+    })
+
+    it('works without detailed steps', () => {
+      const result = formatAmortizationSteps(100000, 1000, 0.004, 0, false)
+      expect(result).toHaveLength(4) // Just the formula steps
+      expect(result[0]).toBe('Amortization Formula (each month):')
+    })
+  })
+
+  describe('formatInvestmentCompoundingSteps', () => {
+    it('formats investment compounding with lump sum and monthly', () => {
+      const result = formatInvestmentCompoundingSteps(10000, 500, 0.005, 120, true)
+      expect(result[0]).toBe('Investment Growth = Lump Sum Growth + Monthly Contributions Growth')
+      expect(result.some(step => step.includes('Lump Sum Growth:'))).toBe(true)
+      expect(result.some(step => step.includes('Monthly Contributions Growth'))).toBe(true)
+      expect(result.some(step => step.includes('Total Investment Value'))).toBe(true)
+    })
+
+    it('handles lump sum only', () => {
+      const result = formatInvestmentCompoundingSteps(10000, 0, 0.005, 60, true)
+      expect(result[0]).toBe('Investment Growth = Lump Sum Growth + Monthly Contributions Growth')
+      expect(result.some(step => step.includes('Lump Sum Growth:'))).toBe(true)
+      // When monthly contribution is 0, should not show monthly section but title still mentions it
+      expect(result.some(step => step.includes('$0/month'))).toBe(false)
+    })
+
+    it('handles monthly contributions only', () => {
+      const result = formatInvestmentCompoundingSteps(0, 1000, 0.006, 60, true)
+      expect(result[0]).toBe('Investment Growth = Lump Sum Growth + Monthly Contributions Growth')
+      expect(result.some(step => step.includes('Lump Sum Growth:'))).toBe(false)
+      expect(result.some(step => step.includes('Monthly Contributions Growth'))).toBe(true)
+    })
+  })
+
+  describe('formatTaxCalculationSteps', () => {
+    it('formats tax calculation correctly', () => {
+      const result = formatTaxCalculationSteps(50000, 40000, 0.20, true)
+      expect(result[0]).toBe('After-Tax Calculation:')
+      expect(result[1]).toBe('Taxable Profit = Gross Return - Total Invested')
+      expect(result[2]).toBe('Taxes = Taxable Profit × Tax Rate')
+      expect(result[3]).toBe('Net Return = Gross Return - Taxes')
+      expect(result.some(step => step.includes('$50,000 - $40,000'))).toBe(true)
+      expect(result.some(step => step.includes('$10,000 × 20.0%'))).toBe(true)
+      expect(result[result.length - 1]).toContain('$48,000')
+    })
+
+    it('handles no profit scenario', () => {
+      const result = formatTaxCalculationSteps(30000, 40000, 0.20, true)
+      expect(result.some(step => step.includes('$0'))).toBe(true) // No taxable profit
+    })
+
+    it('works without detailed steps', () => {
+      const result = formatTaxCalculationSteps(60000, 50000, 0.25, false)
+      expect(result).toHaveLength(5) // Just the basic formula + result
+      expect(result[result.length - 1]).toContain('$57,500')
+    })
+  })
+
+  describe('formatPayoffComparisonSteps', () => {
+    it('recommends payoff when interest saved is higher', () => {
+      const result = formatPayoffComparisonSteps(15000, 12000, true)
+      expect(result[0]).toBe('Strategy Comparison:')
+      expect(result.some(step => step.includes('Mortgage Payoff Benefit: $15,000'))).toBe(true)
+      expect(result.some(step => step.includes('Investment Net Benefit: $12,000'))).toBe(true)
+      expect(result.some(step => step.includes('$15,000 > $12,000'))).toBe(true)
+      expect(result.some(step => step.includes('Payoff is better by $3,000'))).toBe(true)
+      expect(result[result.length - 1]).toBe('Recommended Strategy: Payoff')
+    })
+
+    it('recommends investment when net benefit is higher', () => {
+      const result = formatPayoffComparisonSteps(8000, 12000, true)
+      expect(result[0]).toBe('Strategy Comparison:')
+      expect(result.some(step => step.includes('$12,000 > $8,000'))).toBe(true)
+      expect(result.some(step => step.includes('Investment is better by $4,000'))).toBe(true)
+      expect(result[result.length - 1]).toBe('Recommended Strategy: Investment')
+    })
+
+    it('works without detailed steps', () => {
+      const result = formatPayoffComparisonSteps(10000, 9000, false)
+      expect(result).toHaveLength(3) // Basic comparison + result
+      expect(result[result.length - 1]).toBe('Recommended Strategy: Payoff')
     })
   })
 
