@@ -94,7 +94,14 @@ export const useMortgagePayoffStore = defineStore('mortgagePayoff', () => {
   const interestSaved = computed(() => baseTotalInterest.value - acceleratedTotalInterest.value)
   
   const calculateInvestmentValueInternal = () => {
-    const months = acceleratedPayoffMonths.value
+    // Use the base payoff time if accelerated time is invalid (9999 = never pays off)
+    // This ensures investment comparison uses a reasonable timeframe
+    const months = acceleratedPayoffMonths.value >= 9999 
+      ? basePayoffMonths.value >= 9999 
+        ? totalMonths.value // Fall back to original loan term
+        : basePayoffMonths.value
+      : acceleratedPayoffMonths.value
+    
     const monthlyReturn = investmentReturnRate.value / 100 / 12
     
     const result = calculateInvestmentValue(
@@ -109,17 +116,15 @@ export const useMortgagePayoffStore = defineStore('mortgagePayoff', () => {
   const investmentGrossReturn = computed(() => calculateInvestmentValueInternal())
   
   const investmentProfit = computed(() => {
-    const totalInvested = lumpSumPayment.value + (additionalMonthlyPayment.value * acceleratedPayoffMonths.value)
-    return Math.max(0, investmentGrossReturn.value - totalInvested)
+    return Math.max(0, investmentGrossReturn.value - totalAllContributions.value)
   })
   
   const investmentTaxes = computed(() => investmentProfit.value * (investmentTaxRate.value / 100))
   
   const investmentNetReturn = computed(() => {
-    const totalInvested = lumpSumPayment.value + (additionalMonthlyPayment.value * acceleratedPayoffMonths.value)
     const result = calculateAfterTaxReturn(
       investmentGrossReturn.value,
-      totalInvested,
+      totalAllContributions.value,
       investmentTaxRate.value / 100
     )
     return result.netReturn
@@ -134,7 +139,14 @@ export const useMortgagePayoffStore = defineStore('mortgagePayoff', () => {
   })
   
   const totalMonthlyContributions = computed(() => {
-    return additionalMonthlyPayment.value * acceleratedPayoffMonths.value
+    // Use same logic as investment calculation for consistency
+    const months = acceleratedPayoffMonths.value >= 9999 
+      ? basePayoffMonths.value >= 9999 
+        ? totalMonths.value // Fall back to original loan term
+        : basePayoffMonths.value
+      : acceleratedPayoffMonths.value
+    
+    return additionalMonthlyPayment.value * months
   })
   
   const totalLumpSumContributions = computed(() => {
@@ -146,37 +158,81 @@ export const useMortgagePayoffStore = defineStore('mortgagePayoff', () => {
   })
   
   const balanceChartData = computed(() => {
-    return generateMortgageBalanceChart(
-      principal.value,
-      monthlyPayment.value,
-      additionalMonthlyPayment.value,
-      monthlyInterestRate.value,
-      lumpSumPayment.value
-    )
+    try {
+      return generateMortgageBalanceChart(
+        principal.value,
+        monthlyPayment.value,
+        additionalMonthlyPayment.value,
+        monthlyInterestRate.value,
+        lumpSumPayment.value
+      )
+    } catch (error) {
+      // Return empty chart data when payment doesn't cover interest
+      return {
+        labels: ['Start'],
+        datasets: [
+          {
+            label: 'Standard Payments',
+            data: [principal.value],
+            borderColor: 'rgb(239, 68, 68)',
+            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+            tension: 0.1
+          },
+          {
+            label: 'With Extra Payments',
+            data: [principal.value - lumpSumPayment.value],
+            borderColor: 'rgb(34, 197, 94)',
+            backgroundColor: 'rgba(34, 197, 94, 0.1)',
+            tension: 0.1
+          }
+        ]
+      }
+    }
   })
   
   const interestComparisonChartData = computed(() => {
-    return generateInterestComparisonChart(
-      principal.value,
-      monthlyPayment.value,
-      additionalMonthlyPayment.value,
-      monthlyInterestRate.value,
-      lumpSumPayment.value
-    )
+    try {
+      return generateInterestComparisonChart(
+        principal.value,
+        monthlyPayment.value,
+        additionalMonthlyPayment.value,
+        monthlyInterestRate.value,
+        lumpSumPayment.value
+      )
+    } catch (error) {
+      // Return empty chart data when payment doesn't cover interest
+      return {
+        labels: ['Standard', 'With Extra Payments'],
+        datasets: [
+          {
+            label: 'Total Interest Paid',
+            data: [baseTotalInterest.value, acceleratedTotalInterest.value],
+            backgroundColor: ['rgba(239, 68, 68, 0.6)', 'rgba(34, 197, 94, 0.6)'],
+            borderColor: ['rgb(239, 68, 68)', 'rgb(34, 197, 94)'],
+            borderWidth: 2
+          }
+        ]
+      }
+    }
   })
   
   const investmentComparisonChartData = computed(() => {
     if (!showInvestmentComparison.value) return null
     
-    return generateInvestmentComparisonChart(
-      principal.value,
-      monthlyPayment.value,
-      additionalMonthlyPayment.value,
-      monthlyInterestRate.value,
-      lumpSumPayment.value,
-      investmentReturnRate.value / 100 / 12,
-      investmentTaxRate.value / 100
-    )
+    try {
+      return generateInvestmentComparisonChart(
+        principal.value,
+        monthlyPayment.value,
+        additionalMonthlyPayment.value,
+        monthlyInterestRate.value,
+        lumpSumPayment.value,
+        investmentReturnRate.value / 100 / 12,
+        investmentTaxRate.value / 100
+      )
+    } catch (error) {
+      // Return null when chart can't be generated
+      return null
+    }
   })
   
   // Tooltip data for mathematical explanations

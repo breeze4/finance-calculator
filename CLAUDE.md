@@ -54,5 +54,7 @@ For task planning:
 
 Run `pnpm build` after each phase of work to ensure the app builds and also `pnpm test` to ensure tests pass. Fix any errors.
 
+Never run `pnpm dev`. I will do that on my own, do not run it yourself.
+
 Reference docs/MATH.md for any math questions. Make sure to update formulas in the code and docs/MATH.md when a mistake is found.
 
