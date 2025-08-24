@@ -195,15 +195,18 @@ export const useCoastFireStore = defineStore('coastFire', () => {
   
   const syncFromMonthlyExpenses = () => {
     lastEditedField.value = 'monthly'
-    if (monthlyExpenses.value > 0 && withdrawalRate.value > 0) {
+    // Always sync the values, even when 0
+    if (withdrawalRate.value > 0) {
       targetRetirementAmount.value = targetFromMonthlyExpenses.value
     }
   }
   
   const syncFromTargetAmount = () => {
     lastEditedField.value = 'target'
-    if (targetRetirementAmount.value > 0 && withdrawalRate.value > 0) {
-      monthlyExpenses.value = monthlyFromTarget.value
+    // Always sync the values, even when 0
+    if (withdrawalRate.value > 0) {
+      // Round to nearest dollar (no cents)
+      monthlyExpenses.value = Math.round(monthlyFromTarget.value)
     }
   }
   

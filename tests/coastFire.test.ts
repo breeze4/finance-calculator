@@ -629,7 +629,7 @@ describe('Coast FIRE Calculator', () => {
       store.targetRetirementAmount = 1000000
       store.withdrawalRate = 4
       
-      // $1,000,000 * 4% / 12 = $3333.33
+      // $1,000,000 * 4% / 12 = $3333.33 (computed value keeps decimals)
       expect(store.monthlyFromTarget).toBeCloseTo(3333.33, 2)
     })
 
@@ -661,7 +661,119 @@ describe('Coast FIRE Calculator', () => {
       store.syncFromTargetAmount()
       
       expect(store.lastEditedField).toBe('target')
-      expect(store.monthlyExpenses).toBeCloseTo(6666.67, 2) // $2M * 0.04 / 12
+      expect(store.monthlyExpenses).toBe(6667) // $2M * 0.04 / 12 = 6666.67, rounded to 6667
+    })
+
+    it('should update target retirement amount when monthly expenses change', () => {
+      const store = useCoastFireStore()
+      
+      // Set initial values
+      store.targetRetirementAmount = 1000000
+      store.withdrawalRate = 4
+      store.monthlyExpenses = 0
+      
+      // User enters monthly expenses
+      store.monthlyExpenses = 3000
+      store.syncFromMonthlyExpenses()
+      
+      // Target retirement amount should update immediately
+      expect(store.targetRetirementAmount).toBe(900000) // $3000 * 12 / 0.04
+      
+      // Active target amount should use the calculated value
+      expect(store.activeTargetAmount).toBe(900000)
+      
+      // Verify the field gets marked as last edited
+      expect(store.lastEditedField).toBe('monthly')
+    })
+
+    it('should update monthly expenses when target retirement amount changes', () => {
+      const store = useCoastFireStore()
+      
+      // Set initial values
+      store.monthlyExpenses = 4000
+      store.withdrawalRate = 4
+      store.targetRetirementAmount = 0
+      
+      // User enters target retirement amount  
+      store.targetRetirementAmount = 1500000
+      store.syncFromTargetAmount()
+      
+      // Monthly expenses should update immediately
+      expect(store.monthlyExpenses).toBe(5000) // $1.5M * 0.04 / 12
+      
+      // Active target amount should use the direct value
+      expect(store.activeTargetAmount).toBe(1500000)
+      
+      // Verify the field gets marked as last edited
+      expect(store.lastEditedField).toBe('target')
+    })
+
+    it('should round monthly expenses to nearest dollar when syncing from target', () => {
+      const store = useCoastFireStore()
+      
+      store.withdrawalRate = 4
+      
+      // Test case that would result in cents
+      store.targetRetirementAmount = 1000000
+      store.syncFromTargetAmount()
+      
+      // $1,000,000 * 4% / 12 = $3333.333...
+      // Should round to $3333
+      expect(store.monthlyExpenses).toBe(3333)
+      
+      // Test another case that rounds up
+      store.targetRetirementAmount = 1350000
+      store.syncFromTargetAmount()
+      
+      // $1,350,000 * 4% / 12 = $4500 (exact)
+      expect(store.monthlyExpenses).toBe(4500)
+      
+      // Test case that rounds up
+      store.targetRetirementAmount = 1234567
+      store.syncFromTargetAmount()
+      
+      // $1,234,567 * 4% / 12 = $4115.223...
+      // Should round to $4115
+      expect(store.monthlyExpenses).toBe(4115)
+    })
+
+    it('should NOT update target when monthly expenses is zero (bug test)', () => {
+      const store = useCoastFireStore()
+      
+      // Set initial state - user has entered a target amount
+      store.targetRetirementAmount = 1000000
+      store.withdrawalRate = 4
+      store.monthlyExpenses = 0
+      store.lastEditedField = 'target'
+      
+      // User starts entering monthly expenses (starts from 0)
+      store.monthlyExpenses = 3000
+      store.syncFromMonthlyExpenses()
+      
+      // BUG: The sync function doesn't update targetRetirementAmount because it checks if monthlyExpenses > 0
+      // But the check happens AFTER monthlyExpenses is set to 3000, so it should work
+      // However, the real bug is that when monthlyExpenses WAS 0, the sync doesn't happen
+      expect(store.targetRetirementAmount).toBe(900000) // This SHOULD be updated to $3000 * 12 / 0.04
+      expect(store.lastEditedField).toBe('monthly')
+    })
+
+    it('should update target even when clearing monthly expenses to zero', () => {
+      const store = useCoastFireStore()
+      
+      // Initial state - user had monthly expenses
+      store.monthlyExpenses = 5000
+      store.withdrawalRate = 4
+      store.syncFromMonthlyExpenses()
+      expect(store.targetRetirementAmount).toBe(1500000) // $5000 * 12 / 0.04
+      
+      // User clears monthly expenses back to 0
+      store.monthlyExpenses = 0
+      store.syncFromMonthlyExpenses()
+      
+      // BUG: Target amount should also be updated to 0, but it doesn't update
+      // because syncFromMonthlyExpenses checks if monthlyExpenses > 0
+      expect(store.targetRetirementAmount).toBe(0) // Should be 0 when monthly is 0
+      expect(store.lastEditedField).toBe('monthly') // Should still mark as last edited
     })
 
     it('activeTargetAmount uses correct value based on last edited field', () => {
