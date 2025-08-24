@@ -178,7 +178,8 @@ export const useCoastFireStore = defineStore('coastFire', () => {
   
   const targetFromMonthlyExpenses = computed(() => {
     if (monthlyExpenses.value <= 0 || withdrawalRate.value <= 0) return 0
-    return (monthlyExpenses.value * 12) / (withdrawalRate.value / 100)
+    // Round to nearest dollar (no cents)
+    return Math.round((monthlyExpenses.value * 12) / (withdrawalRate.value / 100))
   })
   
   const monthlyFromTarget = computed(() => {
@@ -197,7 +198,8 @@ export const useCoastFireStore = defineStore('coastFire', () => {
     lastEditedField.value = 'monthly'
     // Always sync the values, even when 0
     if (withdrawalRate.value > 0) {
-      targetRetirementAmount.value = targetFromMonthlyExpenses.value
+      // Round to nearest dollar (no cents)
+      targetRetirementAmount.value = Math.round(targetFromMonthlyExpenses.value)
     }
   }
   
