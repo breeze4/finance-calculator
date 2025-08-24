@@ -332,6 +332,37 @@ if (balance > 0) {
 
 ## Key Mathematical Concepts
 
+### Fisher Equation (Real vs Nominal Returns)
+**Source:** `src/stores/coastFire.ts:127-137`
+
+The Fisher equation correctly calculates real (inflation-adjusted) returns from nominal returns and inflation:
+
+```
+Real Rate = (1 + Nominal Rate) / (1 + Inflation Rate) - 1
+```
+
+**Why not simple subtraction?**
+- Incorrect: `7% nominal - 2% inflation = 5% real` ❌
+- Correct: `(1.07 / 1.02) - 1 = 4.901% real` ✅
+
+**Example calculation:**
+```javascript
+// 7% nominal return, 2% inflation
+const nominal = 0.07
+const inflation = 0.02
+const realRate = ((1 + nominal) / (1 + inflation)) - 1
+// realRate = 0.04901 = 4.901%
+```
+
+**Why it matters:**
+- Simple subtraction assumes returns and inflation are independent
+- Fisher equation accounts for their compounding interaction
+- Over long periods, the difference becomes significant
+- Example: After 30 years, $100 becomes:
+  - Simple subtraction: $100 × (1.05)^30 = $432.19
+  - Fisher equation: $100 × (1.04901)^30 = $407.22
+  - Difference: $24.97 error (6% overestimate)
+
 ### Compound Interest
 The foundation of the Coast FIRE calculator, showing how money grows exponentially over time.
 - Formula: FV = PV × (1 + r)^t
