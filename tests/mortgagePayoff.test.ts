@@ -1238,6 +1238,7 @@ describe('Mortgage Payoff Calculator', () => {
       expect(store.tooltipData.investmentProfit).toBeDefined()
       expect(store.tooltipData.investmentTaxes).toBeDefined()
       expect(store.tooltipData.investmentNetReturn).toBeDefined()
+      expect(store.tooltipData.investmentNetBenefit).toBeDefined()
       expect(store.tooltipData.strategyRecommendation).toBeDefined()
       
       // Check structure of tooltip data
@@ -1278,6 +1279,32 @@ describe('Mortgage Payoff Calculator', () => {
       
       expect(updatedRate).toBe(6.0)
       expect(updatedRate).not.toBe(initialRate)
+    })
+
+    it('should calculate investment net benefit correctly', () => {
+      const store = useMortgagePayoffStore()
+      
+      // Set up scenario
+      store.additionalMonthlyPayment = 500
+      store.lumpSumPayment = 10000
+      store.investmentReturnRate = 8.0
+      store.investmentTaxRate = 20.0
+      
+      // Net benefit should be net return minus total invested
+      const expectedNetBenefit = store.investmentNetReturn - store.totalAllContributions
+      expect(store.investmentNetBenefit).toBe(expectedNetBenefit)
+      
+      // Should be positive for good investment returns
+      expect(store.investmentNetBenefit).toBeGreaterThan(0)
+    })
+
+    it('should have correct investment net benefit tooltip content', () => {
+      const store = useMortgagePayoffStore()
+      const tooltip = store.tooltipData.investmentNetBenefit
+      expect(tooltip.title).toBe('Investment Net Benefit (True Gain)')
+      expect(tooltip.formula).toBe('Net Benefit = After-Tax Investment Value - Total Amount Invested')
+      expect(tooltip.values.netBenefit).toBe(store.investmentNetBenefit)
+      expect(tooltip.explanation).toContain('actual financial benefit')
     })
   })
 })

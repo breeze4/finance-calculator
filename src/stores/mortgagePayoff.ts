@@ -125,11 +125,12 @@ export const useMortgagePayoffStore = defineStore('mortgagePayoff', () => {
     return result.netReturn
   })
   
+  const investmentNetBenefit = computed(() => {
+    return investmentNetReturn.value - totalAllContributions.value
+  })
+  
   const betterStrategy = computed(() => {
-    const totalInvested = lumpSumPayment.value + (additionalMonthlyPayment.value * acceleratedPayoffMonths.value)
-    const investmentNetBenefit = investmentNetReturn.value - totalInvested
-    
-    return determineBetterStrategy(interestSaved.value, investmentNetBenefit)
+    return determineBetterStrategy(interestSaved.value, investmentNetBenefit.value)
   })
   
   const totalMonthlyContributions = computed(() => {
@@ -350,16 +351,34 @@ export const useMortgagePayoffStore = defineStore('mortgagePayoff', () => {
       explanation: 'Investment return after capital gains taxes - the real value you would keep.'
     },
     
+    investmentNetBenefit: {
+      title: 'Investment Net Benefit (True Gain)',
+      formula: 'Net Benefit = After-Tax Investment Value - Total Amount Invested',
+      values: {
+        netReturn: investmentNetReturn.value,
+        totalInvested: totalAllContributions.value,
+        netBenefit: investmentNetBenefit.value
+      },
+      calculation: [
+        'After-Tax Investment Value = {netReturn}',
+        'Total Amount Invested = {totalInvested}',
+        'Net Benefit = {netReturn} - {totalInvested}',
+        '= {netBenefit}'
+      ],
+      result: `True investment gain: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(investmentNetBenefit.value)}`,
+      explanation: 'This is your actual financial benefit from investing - what you gain above your initial investment, directly comparable to interest saved.'
+    },
+    
     strategyRecommendation: {
       title: 'Strategy Recommendation Analysis',
       formula: 'Compare: Interest Saved vs Investment Net Benefit',
       values: {
         interestSaved: interestSaved.value,
-        investmentNetBenefit: investmentNetReturn.value - totalAllContributions.value,
+        investmentNetBenefit: investmentNetBenefit.value,
         totalInvested: totalAllContributions.value,
         netReturn: investmentNetReturn.value,
         betterStrategy: betterStrategy.value,
-        difference: Math.abs(interestSaved.value - (investmentNetReturn.value - totalAllContributions.value))
+        difference: Math.abs(interestSaved.value - investmentNetBenefit.value)
       },
       calculation: [
         'Mortgage Payoff Benefit = {interestSaved}',
@@ -475,6 +494,7 @@ it('should calculate mortgage payoff correctly', () => {
     investmentProfit,
     investmentTaxes,
     investmentNetReturn,
+    investmentNetBenefit,
     betterStrategy,
     balanceChartData,
     interestComparisonChartData,

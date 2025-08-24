@@ -338,6 +338,19 @@ const formatMonths = (months: number) => {
                 <span class="value highlight math-tooltip-trigger">{{ formatCurrency(store.investmentNetReturn) }}</span>
               </MathTooltip>
             </div>
+            <div class="stat-item">
+              <span class="label">Investment Net Benefit:</span>
+              <MathTooltip
+                :title="store.tooltipData.investmentNetBenefit.title"
+                :formula="store.tooltipData.investmentNetBenefit.formula"
+                :values="store.tooltipData.investmentNetBenefit.values"
+                :calculation="store.tooltipData.investmentNetBenefit.calculation"
+                :result="store.tooltipData.investmentNetBenefit.result"
+                :explanation="store.tooltipData.investmentNetBenefit.explanation"
+              >
+                <span class="value highlight math-tooltip-trigger">{{ formatCurrency(store.investmentNetBenefit) }}</span>
+              </MathTooltip>
+            </div>
           </div>
           
           <div class="recommendation" :class="store.betterStrategy">
