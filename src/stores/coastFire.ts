@@ -341,6 +341,210 @@ export const useCoastFireStore = defineStore('coastFire', () => {
     }
   })
   
+  // Tooltip data for mathematical explanations
+  const tooltipData = computed(() => ({
+    yearsToRetirement: {
+      title: 'Years to Retirement Calculation',
+      formula: 'Years = Retirement Age - Current Age',
+      values: {
+        retirementAge: retirementAge.value,
+        currentAge: currentAge.value,
+        years: yearsToRetirement.value
+      },
+      calculation: '{retirementAge} - {currentAge} = {years} years',
+      result: `${yearsToRetirement.value} years until retirement`,
+      explanation: 'Time available for compound growth to work on your investments.'
+    },
+    
+    realReturnRate: {
+      title: 'Fisher Equation (Real Returns)',
+      formula: 'Real Rate = (1 + nominal) ÷ (1 + inflation) - 1',
+      values: {
+        nominalRate: Math.round(expectedReturnRate.value * 10) / 10,
+        inflationRate: Math.round(inflationRate.value * 10) / 10,
+        realRate: Math.round(realReturnRate.value * 10) / 10
+      },
+      calculation: [
+        '(1 + {nominalRate}) ÷ (1 + {inflationRate}) - 1',
+        '= {realRateCalculation} - 1',
+        '= {realRate}%'
+      ],
+      result: `${realReturnRate.value.toFixed(2)}% inflation-adjusted return`,
+      explanation: 'Why not simple subtraction? The Fisher equation accounts for the compounding interaction between inflation and returns.'
+    },
+    
+    futureValue: {
+      title: 'Future Value of Current Savings',
+      formula: 'FV = PV × (1 + r)^t',
+      values: {
+        currentSavings: currentSavings.value,
+        effectiveRate: Math.round(effectiveReturnRate.value * 10) / 10,
+        years: yearsToRetirement.value,
+        futureValue: Math.round(futureValueOfCurrentSavings.value),
+        multiplier: Math.round(Math.pow(1 + effectiveReturnRate.value / 100, yearsToRetirement.value) * 1000) / 1000
+      },
+      calculation: [
+        'FV = {currentSavings} × (1 + {effectiveRate})^{years}',
+        '= {currentSavings} × {multiplier}',
+        '= {futureValue}'
+      ],
+      result: `Your current savings will grow to ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(futureValueOfCurrentSavings.value)}`,
+      explanation: 'Compound interest allows your money to grow exponentially over time.'
+    },
+    
+    inflationAdjustedTarget: {
+      title: useRealReturns.value ? 'Target Amount (Real Returns)' : 'Inflation-Adjusted Target',
+      formula: useRealReturns.value ? 
+        'Target = Original Target (no adjustment needed)' : 
+        'Adjusted Target = Original × (1 + inflation)^years',
+      values: {
+        originalTarget: activeTargetAmount.value,
+        inflationRate: Math.round(inflationRate.value * 10) / 10,
+        years: yearsToRetirement.value,
+        adjustedTarget: inflationAdjustedTarget.value
+      },
+      calculation: useRealReturns.value ? 
+        ['Target remains {originalTarget} (using real returns)'] :
+        [
+          'Adjusted = {originalTarget} × (1 + {inflationRate})^{years}',
+          '= {originalTarget} × {inflationMultiplier}',
+          '= {adjustedTarget}'
+        ],
+      result: `Target: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(inflationAdjustedTarget.value)}`,
+      explanation: useRealReturns.value ?
+        'Using real returns, so target stays in today\'s purchasing power.' :
+        'Target adjusted for inflation to maintain purchasing power at retirement.'
+    },
+    
+    coastFIREReady: {
+      title: 'Coast FIRE Ready Check',
+      formula: 'Coast FIRE Ready = Future Value ≥ Target Amount',
+      values: {
+        futureValue: futureValueOfCurrentSavings.value,
+        target: inflationAdjustedTarget.value,
+        isReady: isCoastFIREReady.value,
+        comparisonResult: isCoastFIREReady.value ? 'TRUE' : 'FALSE'
+      },
+      calculation: [
+        '{futureValue} ≥ {target}',
+        '= {comparisonResult}'
+      ],
+      result: isCoastFIREReady.value ? 'YES - You are Coast FIRE ready!' : 'NO - Not Coast FIRE ready yet',
+      explanation: isCoastFIREReady.value ?
+        'Your current savings will grow enough to meet your retirement goal.' :
+        'You need to save more to let compound interest reach your target.'
+    },
+    
+    additionalSavingsNeeded: {
+      title: 'Additional Savings Needed Now',
+      formula: 'Additional Needed = Target Present Value - Current Savings',
+      values: {
+        targetPV: coastFIRENumber.value,
+        currentSavings: currentSavings.value,
+        additional: additionalSavingsNeeded.value
+      },
+      calculation: [
+        'Target Present Value = {targetPV}',
+        'Additional Needed = {targetPV} - {currentSavings}',
+        '= {additional}'
+      ],
+      result: isCoastFIREReady.value ? 
+        'No additional savings needed!' :
+        `Save ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(additionalSavingsNeeded.value)} more today`,
+      explanation: 'This is the lump sum you need to add today to reach Coast FIRE immediately.'
+    },
+    
+    coastFIRENumber: {
+      title: 'Coast FIRE Number at Current Age',
+      formula: 'Coast FIRE Number = Target ÷ (1 + r)^t',
+      values: {
+        target: inflationAdjustedTarget.value,
+        rate: Math.round(effectiveReturnRate.value * 10) / 10,
+        years: yearsToRetirement.value,
+        coastNumber: coastFIRENumber.value,
+        divisor: Math.round(Math.pow(1 + effectiveReturnRate.value / 100, yearsToRetirement.value) * 1000) / 1000
+      },
+      calculation: [
+        'Coast FIRE Number = {target} ÷ (1 + {rate})^{years}',
+        '= {target} ÷ {divisor}',
+        '= {coastNumber}'
+      ],
+      result: `${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(coastFIRENumber.value)} needed at age ${currentAge.value}`,
+      explanation: 'This is the exact amount you need saved right now to coast to your retirement goal with compound growth.'
+    },
+    
+    coastFIREAge: {
+      title: 'Coast FIRE Age Calculation',
+      formula: isCoastFIREReady.value ? 
+        'Already Coast FIRE ready at current age' :
+        'Years Needed = ln(Target ÷ Current) ÷ ln(1 + r)',
+      values: {
+        currentAge: currentAge.value,
+        target: inflationAdjustedTarget.value,
+        currentSavings: currentSavings.value,
+        rate: Math.round(effectiveReturnRate.value * 10) / 10,
+        coastAge: coastFIREAge.value
+      },
+      calculation: isCoastFIREReady.value ? 
+        ['You are already Coast FIRE ready!'] :
+        [
+          'Years = ln({target} ÷ {currentSavings}) ÷ ln(1 + {rate})',
+          '= ln({ratio}) ÷ ln({onePlusRate})',
+          '= {yearsNeeded} years',
+          'Coast FIRE Age = {currentAge} + {yearsNeeded} = {coastAge}'
+        ],
+      result: isCoastFIREReady.value ?
+        `Coast FIRE ready now at age ${currentAge.value}` :
+        `Coast FIRE ready at age ${coastFIREAge.value}`,
+      explanation: isCoastFIREReady.value ?
+        'Your current savings are sufficient to reach your retirement goal.' :
+        'Age when your current savings (with no additions) will be enough to coast to retirement.'
+    },
+    
+    targetFromExpenses: {
+      title: 'Target from Annual Expenses',
+      formula: 'Target = Annual Expenses ÷ Withdrawal Rate',
+      values: {
+        monthlyExpenses: monthlyExpenses.value,
+        yearlyExpenses: yearlyExpenses.value,
+        withdrawalRate: Math.round(withdrawalRate.value * 10) / 10,
+        target: lastEditedField.value === 'yearly' ? targetFromYearlyExpenses.value : targetFromMonthlyExpenses.value
+      },
+      calculation: lastEditedField.value === 'yearly' ? 
+        [
+          'Target = {yearlyExpenses} ÷ ({withdrawalRate}% ÷ 100)',
+          '= {yearlyExpenses} ÷ {withdrawalRateDecimal}',
+          '= {target}'
+        ] :
+        [
+          'Annual Expenses = {monthlyExpenses} × 12 = {yearlyExpenses}',
+          'Target = {yearlyExpenses} ÷ ({withdrawalRate}% ÷ 100)',
+          '= {yearlyExpenses} ÷ {withdrawalRateDecimal}',
+          '= {target}'
+        ],
+      result: `Need ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(activeTargetAmount.value)} for retirement`,
+      explanation: `Based on the ${withdrawalRate.value}% safe withdrawal rule. This amount should provide your desired spending in retirement.`
+    },
+    
+    monthlyFromTarget: {
+      title: 'Monthly Spending from Target',
+      formula: 'Monthly = (Target × Withdrawal Rate) ÷ 12',
+      values: {
+        target: targetRetirementAmount.value,
+        withdrawalRate: Math.round(withdrawalRate.value * 10) / 10,
+        monthly: monthlyFromTarget.value
+      },
+      calculation: [
+        'Monthly = ({target} × {withdrawalRate}%) ÷ 12',
+        '= ({target} × {withdrawalRateDecimal}) ÷ 12',
+        '= {annualWithdrawal} ÷ 12',
+        '= {monthly}'
+      ],
+      result: `${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(monthlyFromTarget.value)} available monthly`,
+      explanation: `Based on the ${withdrawalRate.value}% safe withdrawal rate from your target portfolio.`
+    }
+  }))
+
   return {
     currentAge,
     retirementAge,
@@ -373,7 +577,8 @@ export const useCoastFireStore = defineStore('coastFire', () => {
     syncFromMonthlyExpenses,
     syncFromYearlyExpenses,
     syncFromTargetAmount,
-    resetToDefaults
+    resetToDefaults,
+    tooltipData
   }
 }, {
   persist: {

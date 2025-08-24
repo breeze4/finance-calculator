@@ -2,6 +2,7 @@
 import { useCoastFireStore } from '../stores/coastFire'
 import { watch, ref } from 'vue'
 import CoastFireProjectionChart from '../components/charts/CoastFireProjectionChart.vue'
+import MathTooltip from '../components/MathTooltip.vue'
 
 const store = useCoastFireStore()
 const showResetFeedback = ref(false)
@@ -209,7 +210,20 @@ const formatPercent = (value: number) => {
           </label>
           <div class="info-text">
             <span v-if="store.useRealReturns">
-              Using real return of {{ formatPercent(Number(store.realReturnRate.toFixed(2))) }} ({{ formatPercent(store.expectedReturnRate) }} nominal - {{ formatPercent(store.inflationRate) }} inflation)
+              Using real return of 
+              <MathTooltip
+                v-if="store.inflationRate > 0"
+                :title="store.tooltipData.realReturnRate.title"
+                :formula="store.tooltipData.realReturnRate.formula"
+                :values="store.tooltipData.realReturnRate.values"
+                :calculation="store.tooltipData.realReturnRate.calculation"
+                :result="store.tooltipData.realReturnRate.result"
+                :explanation="store.tooltipData.realReturnRate.explanation"
+              >
+                <span class="math-tooltip-trigger">{{ formatPercent(Number(store.realReturnRate.toFixed(2))) }}</span>
+              </MathTooltip>
+              <span v-else>{{ formatPercent(Number(store.realReturnRate.toFixed(2))) }}</span>
+              ({{ formatPercent(store.expectedReturnRate) }} nominal - {{ formatPercent(store.inflationRate) }} inflation)
             </span>
             <span v-else>
               Using nominal return of {{ formatPercent(store.expectedReturnRate) }}, target will be adjusted for {{ formatPercent(store.inflationRate) }} inflation
@@ -231,19 +245,46 @@ const formatPercent = (value: number) => {
         
         <div class="result-card" :class="{ 'success': store.isCoastFIREReady }">
           <h4>Coast FIRE Status</h4>
-          <p class="status-text">
-            {{ store.isCoastFIREReady ? '✅ You are Coast FIRE ready!' : '❌ Not Coast FIRE ready yet' }}
-          </p>
+          <MathTooltip
+            :title="store.tooltipData.coastFIREReady.title"
+            :formula="store.tooltipData.coastFIREReady.formula"
+            :values="store.tooltipData.coastFIREReady.values"
+            :calculation="store.tooltipData.coastFIREReady.calculation"
+            :result="store.tooltipData.coastFIREReady.result"
+            :explanation="store.tooltipData.coastFIREReady.explanation"
+          >
+            <p class="status-text math-tooltip-trigger">
+              {{ store.isCoastFIREReady ? '✅ You are Coast FIRE ready!' : '❌ Not Coast FIRE ready yet' }}
+            </p>
+          </MathTooltip>
         </div>
         
         <div class="result-item">
           <span class="label">Years to Retirement:</span>
-          <span class="value">{{ store.yearsToRetirement }} years</span>
+          <MathTooltip
+            :title="store.tooltipData.yearsToRetirement.title"
+            :formula="store.tooltipData.yearsToRetirement.formula"
+            :values="store.tooltipData.yearsToRetirement.values"
+            :calculation="store.tooltipData.yearsToRetirement.calculation"
+            :result="store.tooltipData.yearsToRetirement.result"
+            :explanation="store.tooltipData.yearsToRetirement.explanation"
+          >
+            <span class="value math-tooltip-trigger">{{ store.yearsToRetirement }} years</span>
+          </MathTooltip>
         </div>
         
         <div class="result-item">
           <span class="label">Future Value of Current Savings:</span>
-          <span class="value">{{ formatCurrency(store.futureValueOfCurrentSavings) }}</span>
+          <MathTooltip
+            :title="store.tooltipData.futureValue.title"
+            :formula="store.tooltipData.futureValue.formula"
+            :values="store.tooltipData.futureValue.values"
+            :calculation="store.tooltipData.futureValue.calculation"
+            :result="store.tooltipData.futureValue.result"
+            :explanation="store.tooltipData.futureValue.explanation"
+          >
+            <span class="value math-tooltip-trigger">{{ formatCurrency(store.futureValueOfCurrentSavings) }}</span>
+          </MathTooltip>
         </div>
         
         <div class="result-item">
@@ -258,12 +299,30 @@ const formatPercent = (value: number) => {
         
         <div v-if="store.monthlyExpenses > 0" class="result-item">
           <span class="label">Monthly Spending Available:</span>
-          <span class="value">{{ formatCurrency(store.monthlyFromTarget) }}</span>
+          <MathTooltip
+            :title="store.tooltipData.monthlyFromTarget.title"
+            :formula="store.tooltipData.monthlyFromTarget.formula"
+            :values="store.tooltipData.monthlyFromTarget.values"
+            :calculation="store.tooltipData.monthlyFromTarget.calculation"
+            :result="store.tooltipData.monthlyFromTarget.result"
+            :explanation="store.tooltipData.monthlyFromTarget.explanation"
+          >
+            <span class="value math-tooltip-trigger">{{ formatCurrency(store.monthlyFromTarget) }}</span>
+          </MathTooltip>
         </div>
         
         <div v-if="!store.isCoastFIREReady" class="result-item">
           <span class="label">Additional Savings Needed Now:</span>
-          <span class="value highlight">{{ formatCurrency(store.additionalSavingsNeeded) }}</span>
+          <MathTooltip
+            :title="store.tooltipData.additionalSavingsNeeded.title"
+            :formula="store.tooltipData.additionalSavingsNeeded.formula"
+            :values="store.tooltipData.additionalSavingsNeeded.values"
+            :calculation="store.tooltipData.additionalSavingsNeeded.calculation"
+            :result="store.tooltipData.additionalSavingsNeeded.result"
+            :explanation="store.tooltipData.additionalSavingsNeeded.explanation"
+          >
+            <span class="value highlight math-tooltip-trigger">{{ formatCurrency(store.additionalSavingsNeeded) }}</span>
+          </MathTooltip>
         </div>
         
         <div class="result-item">
@@ -273,7 +332,16 @@ const formatPercent = (value: number) => {
         
         <div class="result-item">
           <span class="label">Coast FIRE Number at Current Age:</span>
-          <span class="value">{{ formatCurrency(store.coastFIRENumber) }}</span>
+          <MathTooltip
+            :title="store.tooltipData.coastFIRENumber.title"
+            :formula="store.tooltipData.coastFIRENumber.formula"
+            :values="store.tooltipData.coastFIRENumber.values"
+            :calculation="store.tooltipData.coastFIRENumber.calculation"
+            :result="store.tooltipData.coastFIRENumber.result"
+            :explanation="store.tooltipData.coastFIRENumber.explanation"
+          >
+            <span class="value math-tooltip-trigger">{{ formatCurrency(store.coastFIRENumber) }}</span>
+          </MathTooltip>
         </div>
         
         <div class="explanation">
@@ -515,6 +583,24 @@ button {
   border-radius: 4px;
   font-size: 0.9rem;
   color: #666;
+}
+
+.math-tooltip-trigger {
+  cursor: help;
+  border-bottom: 1px dotted #409eff;
+  position: relative;
+  transition: all 0.2s ease;
+  padding: 2px 4px;
+  margin: -2px -4px;
+  border-radius: 3px;
+}
+
+.math-tooltip-trigger:hover {
+  background-color: #f0f9ff;
+  border-bottom-style: solid;
+  border-bottom-color: #409eff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(64, 158, 255, 0.2);
 }
 
 @media (max-width: 768px) {

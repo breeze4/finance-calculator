@@ -15,11 +15,15 @@ Vue 3 + TypeScript personal finance calculator app with Coast FIRE and mortgage 
 ### Project Structure
 ```
 src/
-├── components/charts/     # Reusable chart components
-├── stores/                # Pinia stores (coastFire.ts, mortgagePayoff.ts)
-├── views/                 # Page components (calculators)
-├── types/                 # TypeScript interfaces
-└── router/               # Route definitions
+├── components/
+│   ├── charts/           # Reusable chart components (LineChart, AreaChart)
+│   └── MathTooltip.vue   # Mathematical tooltip component ✅
+├── utils/
+│   └── mathFormatters.ts # Mathematical formatting utilities ✅
+├── stores/               # Pinia stores (coastFire.ts, mortgagePayoff.ts)
+├── views/                # Page components (calculators)
+├── types/                # TypeScript interfaces
+└── router/              # Route definitions
 ```
 
 ## Calculators
@@ -64,6 +68,68 @@ monthlyExpenses = (targetAmount * withdrawalRate / 100) / 12
 - When user enters `monthlyExpenses`: Calculate and update `targetRetirementAmount`
 - When user enters `targetRetirementAmount`: Calculate and update `monthlyExpenses`
 - Either field can drive the calculation, last edited field takes precedence
+
+**Mathematical Tooltips System** ✅ IMPLEMENTED:
+All calculated fields display educational mathematical tooltips showing:
+- The exact formula used with proper mathematical notation
+- Current input values substituted with clean formatting
+- Step-by-step calculation breakdown with intermediate results
+- Educational explanations of financial concepts
+
+**Tooltip Implementation** ✅ COMPLETED:
+- **Component**: `MathTooltip.vue` - Reusable Vue component with professional styling
+- **Utilities**: `mathFormatters.ts` - 13+ formatting functions for mathematical expressions
+- **Store Integration**: Dynamic content based on current store values with computed `tooltipData`
+- **Responsive Design**: Desktop hover behavior, mobile modal display
+- **Mathematical Notation**: HTML superscripts, monospace fonts, proper alignment
+- **Performance**: Pure CSS hover with smooth animations, no JavaScript event listeners
+- **Accessibility**: Help cursor indicators, clear visual feedback
+
+**Active Mathematical Tooltips** ✅ IMPLEMENTED:
+
+**Result Fields with Educational Tooltips**:
+1. **Years to Retirement** ✅
+   - Formula: `retirementAge - currentAge`
+   - Example: "65 - 30 = 35 years"
+   - Explanation: Time available for compound growth
+
+2. **Real Return Rate** ✅ (when inflation > 0)
+   - Formula: Fisher equation `(1 + nominal) ÷ (1 + inflation) - 1`
+   - Example: "(1 + 7.0%) ÷ (1 + 3.0%) - 1 = 1.068 - 1 = 3.9%"
+   - Educational: Explains why 7% - 3% ≠ 4% (addresses user's original question)
+
+3. **Future Value of Current Savings** ✅
+   - Formula: `FV = PV × (1 + r)^t`
+   - Example: "$50,000 × (1 + 4.9%)^35 = $50,000 × 1.693 = $384,659"
+   - Clean formatting: Rates to 1 decimal, multipliers to 3 decimals, amounts to whole dollars
+
+4. **Coast FIRE Number at Current Age** ✅
+   - Formula: `Coast FIRE Number = Target ÷ (1 + r)^t`
+   - Example: "$2,400,000 ÷ (1 + 4.9%)^35 = $2,400,000 ÷ 1.693 = $1,417,781"
+   - Explanation: Present value calculation - exact amount needed today
+
+5. **Additional Savings Needed Now** ✅
+   - Formula: `Additional Needed = Coast FIRE Number - Current Savings`
+   - Example: "$1,417,781 - $50,000 = $1,367,781"
+   - Educational: Gap analysis for immediate Coast FIRE readiness
+
+6. **Coast FIRE Ready Status** ✅
+   - Logic: Comparison between future value and target
+   - Example: "Future Value: $384,659 vs Target: $2,400,000 = Not Ready"
+   - Clear explanation of ready/not ready determination
+
+7. **Monthly Spending Available** ✅ (when shown)
+   - Formula: `Monthly = (Target × Withdrawal Rate) ÷ 12`
+   - Example: "($1,000,000 × 4.0%) ÷ 12 = $40,000 ÷ 12 = $3,333"
+   - Educational: Safe withdrawal rate (4% rule) application
+
+**Technical Features** ✅ IMPLEMENTED:
+- **Smart Value Detection**: Auto-formats currencies, percentages, ages based on field names
+- **Precision Control**: All percentages rounded to 1 decimal place maximum
+- **Template System**: Dynamic placeholder substitution with `{fieldName}` syntax  
+- **Mathematical Accuracy**: All formulas verified against `docs/MATH.md`
+- **Test Coverage**: 25+ unit tests for formatting utilities
+- **Performance**: Lightweight, cached computations, smooth animations
 
 ### Mortgage Payoff Calculator
 **Purpose**: Compare accelerated payoff vs investment strategies.
@@ -162,9 +228,12 @@ Error display via computed `errors` object in stores.
 - `pnpm test`: Vitest unit tests
 
 **Test Coverage**:
-- Store calculation logic (96 tests)
+- Store calculation logic (89 tests)
+- Mathematical formatting utilities (25 tests)  
+- Mortgage payoff calculations (57 tests)
 - Edge cases (zero values, high rates)
 - Validation logic
+- **Total**: 171 tests passing ✅
 
 ## Color Palette
 - Primary: `#409eff` (blue)
