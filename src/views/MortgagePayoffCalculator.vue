@@ -14,6 +14,17 @@ const handleReset = () => {
   }, 2000)
 }
 
+const handleDebug = () => {
+  const { testCode } = store.debugState()
+  console.log('Debug output generated. Check browser console for details.')
+  // Also copy test code to clipboard if available
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(testCode).then(() => {
+      console.log('Test code copied to clipboard!')
+    })
+  }
+}
+
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -157,6 +168,10 @@ const formatMonths = (months: number) => {
         
         <button @click="handleReset" class="secondary reset-button">
           Reset to Defaults
+        </button>
+        
+        <button @click="handleDebug" class="secondary debug-button" style="margin-top: 0.5rem;">
+          Debug State (Console)
         </button>
         
         <div v-if="showResetFeedback" class="reset-feedback">

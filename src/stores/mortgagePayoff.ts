@@ -308,6 +308,79 @@ export const useMortgagePayoffStore = defineStore('mortgagePayoff', () => {
     }
   })
   
+  const debugState = () => {
+    const state = {
+      // Input values
+      inputs: {
+        principal: principal.value,
+        yearsLeft: yearsLeft.value,
+        interestRate: interestRate.value,
+        monthlyPayment: monthlyPayment.value,
+        additionalMonthlyPayment: additionalMonthlyPayment.value,
+        lumpSumPayment: lumpSumPayment.value,
+        investmentReturnRate: investmentReturnRate.value,
+        investmentTaxRate: investmentTaxRate.value,
+        showInvestmentComparison: showInvestmentComparison.value
+      },
+      // Computed values
+      computed: {
+        monthlyInterestRate: monthlyInterestRate.value,
+        totalMonths: totalMonths.value,
+        basePayoffMonths: basePayoffMonths.value,
+        baseTotalInterest: baseTotalInterest.value,
+        acceleratedPayoffMonths: acceleratedPayoffMonths.value,
+        acceleratedTotalInterest: acceleratedTotalInterest.value,
+        monthsSaved: monthsSaved.value,
+        interestSaved: interestSaved.value,
+        investmentGrossReturn: investmentGrossReturn.value,
+        investmentProfit: investmentProfit.value,
+        investmentTaxes: investmentTaxes.value,
+        investmentNetReturn: investmentNetReturn.value,
+        betterStrategy: betterStrategy.value
+      }
+    }
+    
+    // Generate test code
+    const testCode = `
+// Test case for mortgage payoff calculator
+it('should calculate mortgage payoff correctly', () => {
+  const store = useMortgagePayoffStore()
+  
+  // Set input values
+  store.principal = ${principal.value}
+  store.yearsLeft = ${yearsLeft.value}
+  store.interestRate = ${interestRate.value}
+  store.monthlyPayment = ${monthlyPayment.value}
+  store.additionalMonthlyPayment = ${additionalMonthlyPayment.value}
+  store.lumpSumPayment = ${lumpSumPayment.value}
+  store.investmentReturnRate = ${investmentReturnRate.value}
+  store.investmentTaxRate = ${investmentTaxRate.value}
+  store.showInvestmentComparison = ${showInvestmentComparison.value}
+  
+  // Verify computed values
+  expect(store.monthlyInterestRate).toBeCloseTo(${monthlyInterestRate.value}, 6)
+  expect(store.totalMonths).toBe(${totalMonths.value})
+  expect(store.basePayoffMonths).toBe(${basePayoffMonths.value})
+  expect(store.baseTotalInterest).toBeCloseTo(${baseTotalInterest.value}, 2)
+  expect(store.acceleratedPayoffMonths).toBe(${acceleratedPayoffMonths.value})
+  expect(store.acceleratedTotalInterest).toBeCloseTo(${acceleratedTotalInterest.value}, 2)
+  expect(store.monthsSaved).toBe(${monthsSaved.value})
+  expect(store.interestSaved).toBeCloseTo(${interestSaved.value}, 2)
+  ${showInvestmentComparison.value ? `expect(store.investmentGrossReturn).toBeCloseTo(${investmentGrossReturn.value}, 2)
+  expect(store.investmentProfit).toBeCloseTo(${investmentProfit.value}, 2)
+  expect(store.investmentTaxes).toBeCloseTo(${investmentTaxes.value}, 2)
+  expect(store.investmentNetReturn).toBeCloseTo(${investmentNetReturn.value}, 2)
+  expect(store.betterStrategy).toBe('${betterStrategy.value}')` : '// Investment comparison not enabled'}
+})`
+    
+    console.log('=== Mortgage Payoff Calculator Debug State ===')
+    console.log(JSON.stringify(state, null, 2))
+    console.log('\n=== Generated Test Code ===')
+    console.log(testCode)
+    
+    return { state, testCode }
+  }
+  
   return {
     principal,
     yearsLeft,
@@ -334,7 +407,8 @@ export const useMortgagePayoffStore = defineStore('mortgagePayoff', () => {
     balanceChartData,
     interestComparisonChartData,
     investmentComparisonChartData,
-    resetToDefaults
+    resetToDefaults,
+    debugState
   }
 }, {
   persist: {

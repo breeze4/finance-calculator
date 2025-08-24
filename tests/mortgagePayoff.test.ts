@@ -893,6 +893,63 @@ describe('Mortgage Payoff Calculator', () => {
     })
   })
 
+  describe('debug state generated tests', () => {
+    it('should calculate mortgage payoff correctly', () => {
+      const store = useMortgagePayoffStore()
+      
+      // Set input values
+      store.principal = 399000
+      store.yearsLeft = 28
+      store.interestRate = 6.75
+      store.monthlyPayment = 4000
+      store.additionalMonthlyPayment = 0
+      store.lumpSumPayment = 40000
+      store.investmentReturnRate = 12.2
+      store.investmentTaxRate = 20
+      store.showInvestmentComparison = true
+      
+      // Verify computed values
+      expect(store.monthlyInterestRate).toBeCloseTo(0.005625000000000001, 6)
+      expect(store.totalMonths).toBe(336)
+      expect(store.basePayoffMonths).toBe(147)
+      expect(store.baseTotalInterest).toBeCloseTo(188225.42297547814, 2)
+      expect(store.acceleratedPayoffMonths).toBe(126)
+      expect(store.acceleratedTotalInterest).toBeCloseTo(142233.97683725343, 2)
+      expect(store.monthsSaved).toBe(21)
+      expect(store.interestSaved).toBeCloseTo(45991.44613822471, 2)
+      expect(store.investmentGrossReturn).toBeCloseTo(143081.08613882973, 2)
+      expect(store.investmentProfit).toBeCloseTo(103081.08613882973, 2)
+      expect(store.investmentTaxes).toBeCloseTo(20616.21722776595, 2)
+      expect(store.investmentNetReturn).toBeCloseTo(122464.8689110638, 2)
+      expect(store.betterStrategy).toBe('payoff')
+    })
+
+    it('should calculate mortgage payoff correctly with no additional payments', () => {
+      const store = useMortgagePayoffStore()
+      
+      // Set input values
+      store.principal = 300000
+      store.yearsLeft = 30
+      store.interestRate = 3.5
+      store.monthlyPayment = 1347
+      store.additionalMonthlyPayment = 0
+      store.lumpSumPayment = 0
+      store.investmentReturnRate = 7
+      store.investmentTaxRate = 20
+      store.showInvestmentComparison = false
+      
+      // Verify computed values
+      expect(store.monthlyInterestRate).toBeCloseTo(0.002916667, 6)
+      expect(store.totalMonths).toBe(360)
+      
+      // With no additional payments, accelerated should equal base
+      expect(store.acceleratedPayoffMonths).toBe(store.basePayoffMonths)
+      expect(store.acceleratedTotalInterest).toBeCloseTo(store.baseTotalInterest, 2)
+      expect(store.monthsSaved).toBe(0)
+      expect(store.interestSaved).toBeCloseTo(0, 2)
+    })
+  })
+
   describe('store integration tests', () => {
     it('should update computed values when inputs change', () => {
       const store = useMortgagePayoffStore()
