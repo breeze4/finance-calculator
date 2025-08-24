@@ -921,7 +921,10 @@ describe('Mortgage Payoff Calculator', () => {
       expect(store.investmentProfit).toBeCloseTo(103081.08613882973, 2)
       expect(store.investmentTaxes).toBeCloseTo(20616.21722776595, 2)
       expect(store.investmentNetReturn).toBeCloseTo(122464.8689110638, 2)
-      expect(store.betterStrategy).toBe('payoff')
+      // Investment net benefit: $122,465 - $40,000 = $82,465
+      // Interest saved: $45,991
+      // Since $82,465 > $45,991, investment is better
+      expect(store.betterStrategy).toBe('invest')
     })
 
     it('should calculate mortgage payoff correctly with no additional payments', () => {

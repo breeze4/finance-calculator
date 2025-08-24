@@ -106,7 +106,14 @@ export const useMortgagePayoffStore = defineStore('mortgagePayoff', () => {
   const investmentNetReturn = computed(() => investmentGrossReturn.value - investmentTaxes.value)
   
   const betterStrategy = computed(() => {
-    return investmentNetReturn.value > (principal.value + interestSaved.value) ? 'invest' : 'payoff'
+    // Compare the net benefit of each strategy:
+    // Investment: What you end up with after taxes minus what you put in
+    // Payoff: The interest you save by paying off early
+    const totalInvested = lumpSumPayment.value + (additionalMonthlyPayment.value * acceleratedPayoffMonths.value)
+    const investmentNetBenefit = investmentNetReturn.value - totalInvested
+    
+    // If investment profit (after tax) is greater than interest saved, invest is better
+    return investmentNetBenefit > interestSaved.value ? 'invest' : 'payoff'
   })
   
   const balanceChartData = computed(() => {
