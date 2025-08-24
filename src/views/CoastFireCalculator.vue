@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useCoastFireStore } from '../stores/coastFire'
 import { watch, ref } from 'vue'
+import CoastFireProjectionChart from '../components/charts/CoastFireProjectionChart.vue'
 
 const store = useCoastFireStore()
 const showResetFeedback = ref(false)
@@ -180,6 +181,8 @@ const formatPercent = (value: number) => {
         </div>
       </div>
     </div>
+    
+    <CoastFireProjectionChart />
   </div>
 </template>
 

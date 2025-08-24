@@ -107,6 +107,85 @@ export const useCoastFireStore = defineStore('coastFire', () => {
     return Math.ceil(currentAge.value + yearsNeeded)
   })
   
+  const projectionChartData = computed(() => {
+    const ages: number[] = []
+    const projectedValues: number[] = []
+    const targetValues: number[] = []
+    
+    const rate = expectedReturnRate.value / 100
+    const years = yearsToRetirement.value
+    
+    // Generate data points for each year from current age to retirement
+    for (let i = 0; i <= years; i++) {
+      const age = currentAge.value + i
+      ages.push(age)
+      
+      // Calculate projected value at this age
+      const projectedValue = currentSavings.value * Math.pow(1 + rate, i)
+      projectedValues.push(projectedValue)
+      
+      // Target value is constant
+      targetValues.push(targetRetirementAmount.value)
+    }
+    
+    return {
+      labels: ages.map(age => `Age ${age}`),
+      datasets: [
+        {
+          label: 'Projected Savings',
+          data: projectedValues,
+          borderColor: '#409eff',
+          backgroundColor: '#409eff33',
+          fill: true,
+          tension: 0.4
+        },
+        {
+          label: 'Target Amount',
+          data: targetValues,
+          borderColor: '#e74c3c',
+          backgroundColor: 'transparent',
+          borderDash: [5, 5],
+          fill: false,
+          pointRadius: 0
+        }
+      ]
+    }
+  })
+  
+  const requiredSavingsByAge = computed(() => {
+    const ages: number[] = []
+    const requiredSavings: number[] = []
+    
+    const rate = expectedReturnRate.value / 100
+    
+    // Calculate required savings for ages from 20 to 50
+    for (let age = 20; age <= 50; age += 5) {
+      ages.push(age)
+      
+      const yearsToRetire = retirementAge.value - age
+      if (yearsToRetire > 0) {
+        const presentValue = targetRetirementAmount.value / Math.pow(1 + rate, yearsToRetire)
+        requiredSavings.push(presentValue)
+      } else {
+        requiredSavings.push(targetRetirementAmount.value)
+      }
+    }
+    
+    return {
+      labels: ages.map(age => `Age ${age}`),
+      datasets: [
+        {
+          label: 'Required Savings to Coast',
+          data: requiredSavings,
+          borderColor: '#27ae60',
+          backgroundColor: '#27ae6033',
+          fill: true,
+          tension: 0.4
+        }
+      ]
+    }
+  })
+  
   return {
     currentAge,
     retirementAge,
@@ -120,6 +199,8 @@ export const useCoastFireStore = defineStore('coastFire', () => {
     isCoastFIREReady,
     additionalSavingsNeeded,
     coastFIREAge,
+    projectionChartData,
+    requiredSavingsByAge,
     resetToDefaults
   }
 }, {

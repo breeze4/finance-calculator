@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useMortgagePayoffStore } from '../stores/mortgagePayoff'
 import { ref } from 'vue'
+import MortgageBalanceChart from '../components/charts/MortgageBalanceChart.vue'
 
 const store = useMortgagePayoffStore()
 const showResetFeedback = ref(false)
@@ -241,6 +242,8 @@ const formatMonths = (months: number) => {
         </div>
       </div>
     </div>
+    
+    <MortgageBalanceChart />
   </div>
 </template>
 
