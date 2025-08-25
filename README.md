@@ -2,6 +2,10 @@
 
 A collection of personal finance calculators to help optimize financial decisions and planning.
 
+[![Netlify Status](https://api.netlify.com/api/v1/badges/ca64d788-a5b0-4c7d-ba3d-a79b88362fe1/deploy-status)](https://breeze-finance-calculator.netlify.app)
+
+**🌐 Live Demo:** [https://breeze-finance-calculator.netlify.app/mortgage-payoff](https://breeze-finance-calculator.netlify.app/mortgage-payoff)
+
 ## Features
 
 ### 🔥 Coast FIRE Calculator
@@ -28,6 +32,35 @@ Compare strategies for paying off your mortgage early versus investing the extra
 - **Pinia** - State management with localStorage persistence
 - **Vue Router** - Client-side routing
 - **Chart.js** - Interactive financial visualization charts
+
+## Deployment
+
+This application is automatically deployed to Netlify with continuous deployment from the main branch. Every push to the main branch triggers a new build and deployment.
+
+**Deployment Features:**
+- **Automatic Builds**: Uses `pnpm build` command to build the Vue application
+- **SPA Routing**: Configured with redirects for Vue Router client-side routing
+- **Build Output**: Serves from the `dist` directory
+- **Live URL**: [https://breeze-finance-calculator.netlify.app](https://breeze-finance-calculator.netlify.app)
+
+**Netlify Configuration:**
+- Build command: `pnpm build`
+- Publish directory: `dist`
+- SPA fallback routing configured
+
+**GitHub Integration:**
+To enable the deployment status badge above, you need to:
+1. Go to your Netlify site dashboard
+2. Navigate to Site settings > General > Site information
+3. Copy your Site ID
+4. Replace `your-site-id` in the badge URL above with your actual Site ID
+5. The badge will automatically show the current deployment status
+
+**Continuous Deployment:**
+- Connect your GitHub repository to Netlify
+- Enable automatic deployments from the main branch
+- Each push triggers a new build and deployment
+- Build logs and deployment status are available in the Netlify dashboard
 
 ## Getting Started
 
