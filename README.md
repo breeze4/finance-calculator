@@ -37,48 +37,14 @@ Compare strategies for paying off your mortgage early versus investing the extra
 
 This application is automatically deployed to Netlify with continuous deployment from the main branch. Every push to the main branch triggers a new build and deployment.
 
-**Deployment Features:**
-- **Automatic Builds**: Uses `pnpm build` command to build the Vue application
-- **SPA Routing**: Configured with redirects for Vue Router client-side routing
-- **Build Output**: Serves from the `dist` directory
-- **Live URL**: [https://breeze-finance-calculator.netlify.app](https://breeze-finance-calculator.netlify.app)
-
-**Netlify Configuration:**
-- Build command: `pnpm build`
-- Publish directory: `dist`
-- SPA fallback routing configured
-
-**GitHub Integration:**
-To enable the deployment status badge above, you need to:
-1. Go to your Netlify site dashboard
-2. Navigate to Site settings > General > Site information
-3. Copy your Site ID
-4. Replace `your-site-id` in the badge URL above with your actual Site ID
-5. The badge will automatically show the current deployment status
-
-**Continuous Deployment:**
-- Connect your GitHub repository to Netlify
-- Enable automatic deployments from the main branch
-- Each push triggers a new build and deployment
-- Build logs and deployment status are available in the Netlify dashboard
-
 ## Getting Started
 
-### Prerequisites
-
-- Node.js (v16 or higher)
-- pnpm package manager
-
-### Installation
+### Dev
 
 ```bash
 # Install dependencies
 pnpm install
-```
 
-### Development
-
-```bash
 # Start the development server
 pnpm dev
 ```
@@ -103,109 +69,15 @@ The project includes comprehensive unit tests for all mathematical calculations:
 # Run all tests
 pnpm test
 
+# Run tests in watch mode
+pnpm test --watch
+
 # Run tests with UI
 pnpm test:ui
 
 # Run tests with coverage report
 pnpm test:coverage
 ```
-
-**Test Coverage:** 104 tests with comprehensive coverage:
-- Coast FIRE calculator: 49 tests (core calculations, monthly expenses feature, bidirectional sync, edge cases, validation)
-- Mortgage payoff calculator: 55 tests (amortization algorithm, investment comparisons, performance testing, store integration)
-- Mathematical edge cases, input validation, and performance testing
-- Full test coverage for bidirectional expense/target calculations and 4% rule implementation
-
-### Testing Infrastructure
-
-- **Automated Testing**: Pre-commit hooks automatically run tests before each commit
-- **Coverage Reporting**: Use `pnpm test:coverage` to generate detailed coverage reports
-- **Continuous Testing**: Tests run in watch mode during development with `pnpm test --watch`
-- **Performance Testing**: Tests include performance benchmarks for large calculations
-- **Mathematical Verification**: All formulas are tested against manual calculations
-
-## Project Structure
-
-```
-finance-calculator/
-├── src/
-│   ├── components/       # Reusable Vue components
-│   │   ├── charts/       # Chart components (LineChart, AreaChart, etc.)
-│   │   └── NavBar.vue    # Navigation component
-│   ├── views/            # Page components
-│   │   ├── HomePage.vue
-│   │   ├── CoastFireCalculator.vue
-│   │   └── MortgagePayoffCalculator.vue
-│   ├── stores/           # Pinia state management
-│   │   ├── coastFire.ts  # Coast FIRE logic & chart data
-│   │   └── mortgagePayoff.ts # Mortgage analysis & chart data
-│   ├── types/            # TypeScript interfaces
-│   ├── router/           # Vue Router configuration
-│   ├── App.vue           # Root component
-│   ├── main.ts           # Application entry point
-│   └── style.css         # Global styles
-├── docs/
-│   ├── SPEC.md           # Technical specification
-│   └── TASKS.md          # Development task tracking
-└── package.json
-```
-
-## Usage
-
-### Coast FIRE Calculator
-
-**Two Ways to Plan Your Retirement:**
-
-**Option 1: Target Amount Approach**
-1. Enter your current age and desired retirement age
-2. Input your current retirement savings and expected annual return rate
-3. Set your target retirement amount (e.g., $1,000,000)
-4. View results and projections
-
-**Option 2: Monthly Expenses Approach** 
-1. Enter basic info (age, savings, return rate)
-2. Input your desired monthly expenses in retirement (e.g., $4,000/month)
-3. Set your safe withdrawal rate (defaults to 4% rule)
-4. The target retirement amount is calculated automatically
-
-**The calculator will show:**
-- Whether you're Coast FIRE ready now
-- Future value of your current savings
-- Additional savings needed (if not ready)
-- Age when you'll achieve Coast FIRE
-- Interactive chart showing savings growth over time
-- Monthly spending power based on your target
-
-**Smart Sync:** Change either the target amount or monthly expenses, and the other field updates automatically using your withdrawal rate.
-
-### Mortgage Payoff Calculator
-
-1. Enter your current mortgage details:
-   - Principal balance
-   - Years remaining
-   - Interest rate
-   - Monthly payment
-2. Add any extra payments:
-   - Additional monthly payment
-   - One-time lump sum
-3. Optionally compare with investment scenario:
-   - Expected investment return rate
-   - Capital gains tax rate
-4. View results:
-   - Time and interest savings
-   - Investment comparison
-   - Personalized recommendation
-
-## State Persistence
-
-All calculator inputs are automatically saved to browser localStorage and will persist between sessions. Use the "Reset to Defaults" button to clear saved values.
-
-## Development
-
-For development guidelines and task tracking, see:
-- `docs/SPEC.md` - Project specification
-- `docs/TASKS.md` - Development task list
-- `CLAUDE.md` - AI assistant instructions
 
 ## License
 
