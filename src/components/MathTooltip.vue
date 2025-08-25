@@ -2,8 +2,10 @@
   <div 
     ref="containerRef"
     class="math-tooltip-container" 
-    :class="{ 'disabled': props.disabled }"
+    :class="{ 'disabled': props.disabled, 'active': showTooltip }"
     @mouseenter="handleMouseEnter"
+    @mouseleave="handleMouseLeave"
+    @click="handleClick"
   >
     <slot />
     <div 
@@ -11,7 +13,8 @@
       class="math-tooltip"
       :class="{ 
         'math-tooltip-mobile': isMobile,
-        'math-tooltip-below': showBelow && !isMobile 
+        'math-tooltip-below': showBelow && !isMobile,
+        'visible': showTooltip
       }"
       @click.stop
     >
@@ -66,6 +69,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const isMobile = ref(false)
 const showBelow = ref(false)
+const showTooltip = ref(false)
 const tooltipRef = ref<HTMLElement>()
 const containerRef = ref<HTMLElement>()
 
@@ -147,12 +151,38 @@ function checkTooltipPosition() {
   showBelow.value = spaceAbove < requiredSpaceAbove && spaceBelow > tooltipHeight
 }
 
+function handleClick(event: Event) {
+  if (isMobile.value && !props.disabled) {
+    event.stopPropagation()
+    showTooltip.value = !showTooltip.value
+    
+    // Close other tooltips when opening this one
+    if (showTooltip.value) {
+      document.addEventListener('click', handleOutsideClick)
+    }
+  }
+}
+
+function handleOutsideClick(event: Event) {
+  if (!containerRef.value?.contains(event.target as Node)) {
+    showTooltip.value = false
+    document.removeEventListener('click', handleOutsideClick)
+  }
+}
+
 function handleMouseEnter() {
-  if (!isMobile.value) {
+  if (!isMobile.value && !props.disabled) {
+    showTooltip.value = true
     // Small delay to ensure tooltip is in DOM before measuring
     setTimeout(() => {
       checkTooltipPosition()
     }, 10)
+  }
+}
+
+function handleMouseLeave() {
+  if (!isMobile.value) {
+    showTooltip.value = false
   }
 }
 
@@ -163,6 +193,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('resize', checkMobile)
+  document.removeEventListener('click', handleOutsideClick)
 })
 </script>
 
@@ -194,13 +225,20 @@ onUnmounted(() => {
   transform: translateX(-50%) translateY(-8px);
 }
 
-.math-tooltip-container:hover .math-tooltip {
+.math-tooltip-container:hover .math-tooltip:not(.math-tooltip-mobile),
+.math-tooltip.visible {
   opacity: 1;
   visibility: visible;
   transform: translateX(-50%) translateY(0);
 }
 
-.math-tooltip-container.disabled:hover .math-tooltip {
+.math-tooltip-mobile.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.math-tooltip-container.disabled:hover .math-tooltip,
+.math-tooltip-container.disabled .math-tooltip.visible {
   opacity: 0;
   visibility: hidden;
 }
@@ -214,7 +252,8 @@ onUnmounted(() => {
   transform: translateX(-50%) translateY(8px);
 }
 
-.math-tooltip-container:hover .math-tooltip-below {
+.math-tooltip-container:hover .math-tooltip-below:not(.math-tooltip-mobile),
+.math-tooltip-below.visible {
   transform: translateX(-50%) translateY(0);
 }
 
@@ -239,13 +278,19 @@ onUnmounted(() => {
 
 .math-tooltip-mobile {
   position: fixed;
-  top: 50%;
+  top: 10px;
+  bottom: auto;
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translateX(-50%);
   margin: 0;
   max-width: 90vw;
-  max-height: 80vh;
+  width: 90vw;
+  height: auto;
+  min-height: auto;
+  max-height: calc(100vh - 20px);
   overflow-y: auto;
+  overflow-x: hidden;
+  display: block;
 }
 
 .math-tooltip-mobile::after {
@@ -331,15 +376,44 @@ onUnmounted(() => {
 
 /* Mobile responsiveness */
 @media (max-width: 768px) {
-  .math-tooltip {
+  .math-tooltip:not(.math-tooltip-mobile) {
     min-width: 280px;
     max-width: 90vw;
-    font-size: 13px;
-    padding: 12px;
+    font-size: 12px;
+    padding: 10px;
+  }
+  
+  .math-tooltip-mobile {
+    padding: 10px;
+    font-size: 12px;
   }
   
   .math-tooltip-title {
-    font-size: 15px;
+    font-size: 14px;
+    padding-bottom: 6px;
+  }
+  
+  .math-tooltip-mobile .math-tooltip-content {
+    gap: 6px;
+  }
+  
+  .math-tooltip-mobile .formula-content,
+  .math-tooltip-mobile .calculation-steps,
+  .math-tooltip-mobile .result-content,
+  .math-tooltip-mobile .math-explanation {
+    padding: 4px 6px;
+    font-size: 11px;
+  }
+  
+  .math-tooltip-mobile .formula-label,
+  .math-tooltip-mobile .calculation-label {
+    font-size: 11px;
+    margin-bottom: 2px;
+  }
+  
+  .math-tooltip-mobile .calculation-step:not(:last-child) {
+    margin-bottom: 4px;
+    padding-bottom: 2px;
   }
 }
 
